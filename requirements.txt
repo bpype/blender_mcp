@@ -1,0 +1,9 @@
+mcp[cli]>=1.2.0
+pyyaml
+
+# Development.
+autopep8
+mypy
+pylint
+types-PyYAML
+vulture

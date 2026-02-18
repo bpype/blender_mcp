@@ -1,0 +1,19 @@
+schema_version = "1.0.0"
+
+id = "blender_mcp_addon"
+version = "0.1.0"
+name = "Blender MCP"
+tagline = "MCP server addon for LLM interaction with Blender"
+maintainer = "Blender MCP Contributors"
+type = "add-on"
+
+blender_version_min = "5.0.0"
+
+license = [
+  "SPDX:GPL-3.0-or-later",
+]
+
+tags = ["Development"]
+
+[permissions]
+network = "Runs a local TCP socket server for MCP client communication"
