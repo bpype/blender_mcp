@@ -483,7 +483,7 @@ class TestChatClient(unittest.TestCase):
         with _StatusReport("Installing addon") as st:
             _run_blender(
                 [
-                    blender_bin, "--background", "--factory-startup",
+                    blender_bin, "--background", "--factory-startup", "--online-mode",
                     "--command", "extension", "install-file",
                     zips[0], "--repo", "user_default", "--enable",
                 ],
@@ -495,7 +495,7 @@ class TestChatClient(unittest.TestCase):
         with _StatusReport("Saving preferences (port {:d})".format(_PORT_BLENDER)) as st:
             _run_blender(
                 [
-                    blender_bin, "--background",
+                    blender_bin, "--background", "--online-mode",
                     "--python-expr",
                     (
                         "import bpy; "
@@ -520,7 +520,7 @@ class TestChatClient(unittest.TestCase):
         # -- Start Blender (graphical, no --background) ------------------
         with _StatusReport("Starting Blender") as st:
             cls._blender_proc = subprocess.Popen(
-                [blender_bin],
+                [blender_bin, "--online-mode"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 env=env,

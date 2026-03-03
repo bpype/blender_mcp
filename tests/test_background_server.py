@@ -245,7 +245,7 @@ class _TestServerMixin:
         # Install the extension into the isolated HOME.
         _run_blender(
             [
-                blender_bin, "--background", "--factory-startup",
+                blender_bin, "--online-mode", "--background", "--factory-startup",
                 "--command", "extension", "install-file",
                 zips[0], "--repo", "user_default", "--enable",
             ],
@@ -283,7 +283,7 @@ class _TestServerMixin:
         # Start Blender with the installed addon.
         # Omit `--factory-startup` so saved preferences (with the
         # extension enabled) are loaded from the isolated HOME.
-        blender_args = [blender_bin]
+        blender_args = [blender_bin, "--online-mode"]
         if cls._background:
             blender_args.append("--background")
         if not cls._interactive:
