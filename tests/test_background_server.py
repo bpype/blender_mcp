@@ -585,6 +585,19 @@ class _TestServerMixin:
             "code": "raise ValueError('test error')",
         })
 
+    def test_execute_blender_code_blocked_operator(self) -> None:
+        """Verify that the sandbox blocks actions which may exit Blender or lose our connection."""
+        content = self._call_tool_expect_error("execute_blender_code", {
+            "code": "import bpy; bpy.ops.wm.read_factory_settings()",
+        })
+        self.assertIn(
+            "RuntimeError: Operator 'wm.read_factory_settings' is not allowed "
+            "in LLM-generated code: Resets all user preferences and startup file, "
+            "use bpy.ops.wm.read_homefile() or "
+            "bpy.ops.wm.read_homefile(use_empty=True, use_factory_startup=True) instead",
+            content[0]["text"],
+        )
+
     def test_jump_to_tab_by_name_error(self) -> None:
         data = self._test_tool("jump_to_tab_by_name", {"name": "NonExistent"})
         self.assertEqual(data["status"], "error")
