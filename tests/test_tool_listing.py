@@ -27,7 +27,7 @@ EXPECTED_TOOLS = [
         "description": (
             "\nExecute Python code in the connected Blender instance.\n\n"
             "The code runs in Blender's Python environment with full access to ``bpy``.\n"
-            "To return data, assign a JSON-serialisable value to a variable named ``result``.\n"
+            "To return data, assign a JSON-serialisable dict to a variable named ``result``.\n"
         ),
         "inputSchema": {
             "properties": {
@@ -46,7 +46,7 @@ EXPECTED_TOOLS = [
         "description": (
             "\nExecute Python code in a background Blender process.\n\n"
             "Opens *blend_file* with ``blender --background`` and runs *code*.\n"
-            "Assign to ``result`` to return data.\n"
+            "Assign a dict to ``result`` to return data.\n"
         ),
         "inputSchema": {
             "properties": {

@@ -22,7 +22,7 @@ def register(mcp: FastMCP) -> None:
         Execute Python code in the connected Blender instance.
 
         The code runs in Blender's Python environment with full access to ``bpy``.
-        To return data, assign a JSON-serialisable value to a variable named ``result``.
+        To return data, assign a JSON-serialisable dict to a variable named ``result``.
         """
         value = send_code(code)
         assert isinstance(value, dict), "Expected dict from `send_code`, got {!r}".format(type(value))
@@ -34,7 +34,7 @@ def register(mcp: FastMCP) -> None:
         Execute Python code in a background Blender process.
 
         Opens *blend_file* with ``blender --background`` and runs *code*.
-        Assign to ``result`` to return data.
+        Assign a dict to ``result`` to return data.
         """
         with synced_blend_for_cli(blend_file) as synced_path:
             value = run_blender_cli(synced_path, code)

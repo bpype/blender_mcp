@@ -186,9 +186,16 @@ def _execute_code(code: str) -> dict[str, object]:
     Execute *code* and return a response dict.
     """
     try:
-        namespace: dict[str, object] = {}
+        namespace: dict[str, object] = {"result": {}}
         exec(code, namespace)
-        return {"status": "ok", "result": namespace.get("result")}
+        result = namespace["result"]
+        if not isinstance(result, dict):
+            # Caught below, returned as an error status to the MCP client.
+            raise TypeError(
+                "The `result` variable must be a dict, not {:s}. "
+                "Wrap your return value: `result = {{\"key\": value}}`".format(type(result).__name__)
+            )
+        return {"status": "ok", "result": result}
     except Exception:  # pylint: disable=broad-exception-caught
         return {"status": "error", "message": traceback.format_exc()}
 

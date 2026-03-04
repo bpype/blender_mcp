@@ -17,7 +17,6 @@ import logging
 import os
 import subprocess
 from collections.abc import Generator
-from typing import cast
 
 from blmcp.tools_helpers.connection import send_code
 
@@ -51,9 +50,15 @@ def run_blender_cli(
     wrapper = (
         "import json\n"
         "try:\n"
-        "    _ns = {{}}\n"
+        "    _ns = {{'result': {{}}}}\n"
         "    exec({!r}, _ns)\n"
-        '    print("{:s}" + json.dumps(_ns.get("result")))\n'
+        "    _result = _ns['result']\n"
+        "    if not isinstance(_result, dict):\n"
+        "        raise TypeError(\n"
+        "            'The `result` variable must be a dict, not ' +\n"
+        "            type(_result).__name__ +\n"
+        "            '. Wrap your return value: `result = {{\"key\": value}}`')\n"
+        '    print("{:s}" + json.dumps(_result))\n'
         "except Exception as ex:\n"
         '    print("{:s}" + json.dumps(str(ex)))\n'
     ).format(code, _RESULT_PREFIX, _ERROR_PREFIX)
@@ -76,7 +81,10 @@ def run_blender_cli(
 
     for line in proc.stdout.splitlines():
         if line.startswith(_RESULT_PREFIX):
-            return cast(dict[str, object], json.loads(line[len(_RESULT_PREFIX):]))
+            result = json.loads(line[len(_RESULT_PREFIX):])
+            if not isinstance(result, dict):
+                raise TypeError("Expected dict from Blender CLI, got {!r}".format(type(result)))
+            return result
         if line.startswith(_ERROR_PREFIX):
             raise RuntimeError("Blender error: {:s}".format(json.loads(line[len(_ERROR_PREFIX):])))
 

@@ -14,7 +14,6 @@ __all__ = (
 import json
 import os
 import socket
-from typing import cast
 
 DEFAULT_HOST = "localhost"
 DEFAULT_PORT = 9876
@@ -73,4 +72,7 @@ def send_code(code: str) -> dict[str, object]:
                 "Blender error: {:s}".format(response.get("message", "Unknown error"))
             )
 
-        return cast(dict[str, object], response.get("result"))
+        result = response.get("result")
+        if not isinstance(result, dict):
+            raise TypeError("Expected dict from Blender, got {!r}".format(type(result)))
+        return result

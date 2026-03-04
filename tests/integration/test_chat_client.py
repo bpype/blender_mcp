@@ -229,7 +229,8 @@ def _blender_exec_for_internal_use_only_ok_or_exception(
     port: int, code: str, timeout: float = 10,
 ) -> dict[str, object]:
     """
-    Like ``_blender_exec_for_internal_use_only`` but raises on failure.
+    Like ``_blender_exec_for_internal_use_only`` but raises ``RuntimeError``
+    when the response status is not ``ok``.
     """
     result = _blender_exec_for_internal_use_only(port, code, timeout)
     if result.get("status") != "ok":
@@ -634,12 +635,12 @@ class TestChatClient(unittest.TestCase):
         Run *fn* in Blender via the addon's TCP server and return its result.
 
         The source of *fn* is sent as a function definition followed by
-        ``result = fn()``. *fn* is never called locally.
+        ``result = {"value": fn()}``. *fn* is never called locally.
         """
         source = textwrap.dedent(inspect.getsource(fn))
-        code = "{:s}\nresult = {:s}()\n".format(source, fn.__name__)
+        code = "{:s}\nresult = {{\"value\": {:s}()}}\n".format(source, fn.__name__)
         response = _blender_exec_for_internal_use_only_ok_or_exception(_PORT_BLENDER, code)
-        return response.get("result")
+        return response.get("result", {}).get("value")
 
     def _run_chat_client(
         self, prompt: str, provider_args: list[str], *, timeout: int = 120,
@@ -732,9 +733,9 @@ class TestChatClient(unittest.TestCase):
         )
         result = _blender_exec_for_internal_use_only_ok_or_exception(
             _PORT_BLENDER,
-            "import bpy; result = sorted(ob.name for ob in bpy.data.objects)",
+            "import bpy; result = {'names': sorted(ob.name for ob in bpy.data.objects)}",
         )
-        names = result.get("result")
+        names = result.get("result", {}).get("names")
         self.assertEqual(
             names, ["Camera", "Cube", "Light"],
             "Expected corrected names.\n" + self._last_output_info,
