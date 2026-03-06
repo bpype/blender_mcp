@@ -40,7 +40,6 @@ from mcp.client.stdio import stdio_client  # pylint: disable=import-error,no-nam
 
 # ---------------------------------------------------------------------------
 # OpenAI API helpers
-# ---------------------------------------------------------------------------
 
 def _api_chat_completions(
     api_url: str,
@@ -86,7 +85,6 @@ def _mcp_tools_to_openai(mcp_tools: list[dict[str, Any]]) -> list[dict[str, Any]
 
 # ---------------------------------------------------------------------------
 # Claude API helpers
-# ---------------------------------------------------------------------------
 
 def _api_claude_messages(
     api_url: str,
@@ -141,7 +139,6 @@ def _mcp_tools_to_claude(mcp_tools: list[dict[str, Any]]) -> list[dict[str, Any]
 
 # ---------------------------------------------------------------------------
 # Response helpers
-# ---------------------------------------------------------------------------
 
 # Return type shared by both response processors:
 #   (assistant_message, tool_calls, text_reply, turn_done)
@@ -199,7 +196,6 @@ def _process_claude_response(response: dict[str, Any]) -> _ResponseTuple:
 
 # ---------------------------------------------------------------------------
 # MCP tool invocation
-# ---------------------------------------------------------------------------
 
 async def _call_tool(
     session: ClientSession,
@@ -224,7 +220,6 @@ async def _call_tool(
 
 # ---------------------------------------------------------------------------
 # Main async loop
-# ---------------------------------------------------------------------------
 
 async def _run(
     server_command: str,
@@ -392,7 +387,6 @@ async def _run(
 
 # ---------------------------------------------------------------------------
 # CLI entry point
-# ---------------------------------------------------------------------------
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -416,7 +410,8 @@ def main() -> None:
 
     subparsers = parser.add_subparsers(dest="provider", required=True)
 
-    # -- openai subcommand ------------------------------------------------
+    # -----------------
+    # openai subcommand
     sp_openai = subparsers.add_parser(
         "openai",
         help="Use an OpenAI-compatible API (e.g. llama.cpp).",
@@ -434,7 +429,8 @@ def main() -> None:
         help="Model name for the API request body (optional).",
     )
 
-    # -- claude subcommand ------------------------------------------------
+    # -----------------
+    # claude subcommand
     sp_claude = subparsers.add_parser(
         "claude",
         help="Use the Anthropic Messages API.",

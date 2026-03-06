@@ -77,7 +77,6 @@ def use_screenshot_check() -> bool:
 
 # ---------------------------------------------------------------------------
 # Helpers (duplicated from test_background_server.py, same pattern).
-# ---------------------------------------------------------------------------
 
 def _blender_env(tmpdir: str) -> dict[str, str]:
     """
@@ -244,7 +243,6 @@ def _wait_for_health(
 
 # ---------------------------------------------------------------------------
 # Blender TCP helpers.
-# ---------------------------------------------------------------------------
 
 def _blender_exec_for_internal_use_only(
     port: int, code: str, timeout: float = 10,
@@ -341,7 +339,6 @@ def _blender_reset(port: int) -> None:
 
 # ---------------------------------------------------------------------------
 # New helpers.
-# ---------------------------------------------------------------------------
 
 class _StatusReport:
     """
@@ -512,7 +509,6 @@ def _start_mock_llm(port: int) -> http.server.HTTPServer:
 
 # ---------------------------------------------------------------------------
 # Test class.
-# ---------------------------------------------------------------------------
 
 @unittest.skipUnless(
     os.environ.get("BLENDER_BIN"),
@@ -543,13 +539,15 @@ class TestChatClient(unittest.TestCase):
 
         env = _blender_env(tmpdir)
 
-        # -- Venv --------------------------------------------------------
+        # ----
+        # Venv
         with _StatusReport("Creating venv and installing blender-mcp") as st:
             cls._venv_python = _create_venv()
             venv_bin_dir = os.path.dirname(cls._venv_python)
             st.status("OK")
 
-        # -- Build addon -------------------------------------------------
+        # -----------
+        # Build addon
         with _StatusReport("Building addon") as st:
             addon_src = os.path.join(_REPO_DIR, "addon", "blender_mcp_addon")
             _run_blender(
@@ -565,7 +563,8 @@ class TestChatClient(unittest.TestCase):
                 raise RuntimeError("Extension build did not produce a zip")
             st.status("OK")
 
-        # -- Install addon -----------------------------------------------
+        # -------------
+        # Install addon
         with _StatusReport("Installing addon") as st:
             _run_blender(
                 [
@@ -577,7 +576,8 @@ class TestChatClient(unittest.TestCase):
             )
             st.status("OK")
 
-        # -- Save preferences (interactive mode) -------------------------
+        # -----------------------------------
+        # Save preferences (interactive mode)
         with _StatusReport("Saving preferences (port {:d})".format(_PORT_BLENDER)) as st:
             _run_blender(
                 [
@@ -596,14 +596,16 @@ class TestChatClient(unittest.TestCase):
             )
             st.status("OK")
 
-        # -- Headless display --------------------------------------------
+        # ----------------
+        # Headless display
         if not os.environ.get("BLENDER_MCP_FOREGROUND"):
             with _StatusReport("Starting headless display") as st:
                 weston_proc, weston_ini = _start_headless_display(env)
                 cls.addClassCleanup(_stop_headless_display, weston_proc, weston_ini)
                 st.status("OK")
 
-        # -- Start Blender (graphical, no --background) ------------------
+        # ------------------------------------------
+        # Start Blender (graphical, no --background)
         with _StatusReport("Starting Blender") as st:
             cls._blender_proc = subprocess.Popen(
                 [blender_bin, "--online-mode"],
@@ -616,7 +618,8 @@ class TestChatClient(unittest.TestCase):
             _wait_for_port(_PORT_BLENDER, _TIMEOUT_STARTUP, cls._blender_proc)
             st.status("OK")
 
-        # -- Mock LLM ---------------------------------------------------
+        # --------
+        # Mock LLM
         with _StatusReport("Starting mock LLM (port {:d})".format(_PORT_MOCK_LLM)) as st:
             cls._mock_server = _start_mock_llm(_PORT_MOCK_LLM)
             cls.addClassCleanup(cls._mock_server.shutdown)
@@ -634,7 +637,8 @@ class TestChatClient(unittest.TestCase):
                 _wait_for_health(_PORT_LLAMA_SERVER, _TIMEOUT_STARTUP, cls._llama_server_proc)
                 st.status("OK")
 
-        # -- Store paths for test methods --------------------------------
+        # ----------------------------
+        # Store paths for test methods
         cls._blender_mcp_cmd = os.path.join(venv_bin_dir, "blender-mcp")
         cls._blender_bin = blender_bin
         cls._env = env
@@ -736,7 +740,8 @@ class TestChatClient(unittest.TestCase):
         # Reset so this test does not leak state.
         _blender_reset(_PORT_BLENDER)
 
-    # -- Helpers for use-case tests --------------------------------------
+    # --------------------------
+    # Helpers for use-case tests
 
     def _setup_scene(self, fn: Callable[[], None]) -> None:
         """
@@ -824,7 +829,8 @@ class TestChatClient(unittest.TestCase):
         )
         return stdout_text
 
-    # -- Use-case tests --------------------------------------------------
+    # --------------
+    # Use-case tests
     #
     # One test per bullet point in ``use_cases.txt`` (Use Cases).
     # Each is gated on use_llm_check().
@@ -1099,7 +1105,8 @@ class TestChatClient(unittest.TestCase):
 
             mat = bpy.data.materials.new('Default')
 
-            # -- Objects with problems ---------------------------------------
+            # ---------------------
+            # Objects with problems
 
             # Barrel: non-manifold (face deleted).
             bpy.ops.mesh.primitive_cube_add(location=(0, 0, 0))
@@ -1131,7 +1138,8 @@ class TestChatClient(unittest.TestCase):
             tex.image = img
             ob.data.materials.append(abs_mat)
 
-            # -- Clean objects (no defects) ----------------------------------
+            # --------------------------
+            # Clean objects (no defects)
 
             bpy.ops.mesh.primitive_cube_add(location=(0, 3, 0))
             ob = bpy.context.object
