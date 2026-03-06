@@ -227,7 +227,7 @@ EXPECTED_TOOLS = [
         },
     },
     {
-        "name": "get_scene_summary_collections",
+        "name": "get_objects_summary",
         "description": (
             "\nReturn the scene's collection hierarchy and their objects.\n\n"
             "Each collection lists its objects (name, type, parent, data name,\n"
@@ -235,7 +235,7 @@ EXPECTED_TOOLS = [
         ),
         "inputSchema": {
             "properties": {},
-            "title": "get_scene_summary_collectionsArguments",
+            "title": "get_objects_summaryArguments",
             "type": "object",
         },
     },

@@ -539,8 +539,8 @@ class _TestServerMixin:
         self.assertIn("'NonExistent' not found", data["message"])
         self.assertIn("Cube", data["message"])
 
-    def test_get_scene_summary_collections(self) -> None:
-        data = self._test_tool("get_scene_summary_collections")
+    def test_get_objects_summary(self) -> None:
+        data = self._test_tool("get_objects_summary")
         self.assertEqual(data, {
             "scene_name": "Scene",
             "active_workspace": "Layout",

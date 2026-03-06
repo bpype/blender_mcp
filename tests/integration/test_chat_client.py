@@ -710,7 +710,7 @@ class TestChatClient(unittest.TestCase):
         self.assertIn("Cube", stdout_text, "Expected 'Cube' in output.\n" + self._last_output_info)
         self.assertTrue(
             "get_object_detail_summary" in stdout_text
-            or "get_scene_summary_collections" in stdout_text
+            or "get_objects_summary" in stdout_text
             or "execute_blender_code" in stdout_text,
             "Expected a tool call in output.\n" + self._last_output_info,
         )

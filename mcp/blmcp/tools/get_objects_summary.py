@@ -21,7 +21,7 @@ _TOOL_CALL = toolcode_wrap_with_calling_convention(toolcode_load_from_filepath(_
 
 def register(mcp: FastMCP) -> None:
     @mcp.tool()
-    def get_scene_summary_collections() -> dict[str, object]:
+    def get_objects_summary() -> dict[str, object]:
         """
         Return the scene's collection hierarchy and their objects.
 
