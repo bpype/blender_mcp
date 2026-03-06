@@ -27,5 +27,9 @@ def register(mcp: FastMCP) -> None:
         """
         Take a screenshot of the entire Blender window and return it as a PNG image.
         """
-        data = send_code(toolcode_format_call(_TOOL_CALL, None))
-        return Image(data=base64.b64decode(str(data["image_base64"])), format="png")
+        response = send_code(toolcode_format_call(_TOOL_CALL, None))
+        if response.get("status") != "ok":
+            raise RuntimeError(str(response.get("message", "Unknown error")))
+        result = response["result"]
+        assert isinstance(result, dict)
+        return Image(data=base64.b64decode(str(result["image_base64"])), format="png")

@@ -387,6 +387,9 @@ class _TestServerMixin:
     ) -> dict[str, object]:
         """
         Call a tool that returns text and return the parsed JSON result.
+
+        When the response contains ``"status": "ok"`` the ``"result"``
+        value is returned directly. Error responses are returned as-is.
         """
         content = self._call_tool(name, arguments)
         text_item = content[0]
@@ -396,7 +399,10 @@ class _TestServerMixin:
                 name, text_item.get("type"),
             ),
         )
-        return json.loads(text_item["text"])
+        data = json.loads(text_item["text"])
+        if data.get("status") == "ok":
+            return data["result"]
+        return data
 
     def setUp(self) -> None:
         """Reload the default scene so each test starts from a clean state."""
@@ -660,31 +666,35 @@ class _TestServerMixin:
     # Error handling.
 
     def test_execute_blender_code_error(self) -> None:
-        self._call_tool_expect_error("execute_blender_code", {
+        data = self._test_tool("execute_blender_code", {
             "code": "raise ValueError('test error')",
         })
+        self.assertEqual(data["status"], "error")
+        self.assertIn("ValueError", data["message"])
 
     def test_execute_blender_code_blocked_operator(self) -> None:
         """Verify that the sandbox blocks actions which may exit Blender or lose our connection."""
-        content = self._call_tool_expect_error("execute_blender_code", {
+        data = self._test_tool("execute_blender_code", {
             "code": "import bpy; bpy.ops.wm.read_factory_settings()",
         })
+        self.assertEqual(data["status"], "error")
         self.assertIn(
             "RuntimeError: Operator 'wm.read_factory_settings' is not allowed "
             "in LLM-generated code: Resets all user preferences and startup file, "
             "use bpy.ops.wm.read_homefile() or "
             "bpy.ops.wm.read_homefile(use_empty=True, use_factory_startup=True) instead",
-            content[0]["text"],
+            data["message"],
         )
 
     def test_execute_blender_code_blocked_sys_exit(self) -> None:
         """Verify that the sandbox blocks sys.exit()."""
-        content = self._call_tool_expect_error("execute_blender_code", {
+        data = self._test_tool("execute_blender_code", {
             "code": "import sys; sys.exit(1)",
         })
+        self.assertEqual(data["status"], "error")
         self.assertIn(
             "RuntimeError: sys.exit() is not allowed in LLM-generated code",
-            content[0]["text"],
+            data["message"],
         )
 
     def test_jump_to_tab_by_name_error(self) -> None:

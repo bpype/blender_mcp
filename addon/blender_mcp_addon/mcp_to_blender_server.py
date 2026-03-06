@@ -183,25 +183,37 @@ def _execute_code(code: str) -> dict[str, object]:
     """
     Execute *code* and return a response dict.
     """
+    from .capture_output import CaptureOutput
     from .weak_sandbox import WeakSandboxForLLM
 
     namespace: dict[str, object] = {"result": {}}
-    with WeakSandboxForLLM():
+    with CaptureOutput() as captured, WeakSandboxForLLM():
         try:
             exec(code, namespace)
         except Exception:  # pylint: disable=broad-exception-caught
-            return {"status": "error", "message": traceback.format_exc()}
+            response: dict[str, object] = {"status": "error", "message": traceback.format_exc()}
+            if captured.stdout:
+                response["stdout"] = captured.stdout
+            if captured.stderr:
+                response["stderr"] = captured.stderr
+            return response
 
     result = namespace["result"]
     if not isinstance(result, dict):
-        return {
+        response = {
             "status": "error",
             "message": (
                 "The `result` variable must be a dict, not {:s}. "
                 "Wrap your return value: `result = {{\"key\": value}}`"
             ).format(type(result).__name__),
         }
-    return {"status": "ok", "result": result}
+    else:
+        response = {"status": "ok", "result": result}
+    if captured.stdout:
+        response["stdout"] = captured.stdout
+    if captured.stderr:
+        response["stderr"] = captured.stderr
+    return response
 
 
 def _handle_request(data: bytes) -> dict[str, object]:

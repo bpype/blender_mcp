@@ -31,9 +31,12 @@ def send_code(code: str) -> dict[str, object]:
     """
     Send Python code to the Blender addon socket server for execution.
 
-    Returns the value of the ``result`` variable set by the executed code.
-    Raises ``ConnectionError`` when Blender is unreachable and ``RuntimeError``
-    when the executed code raises an exception.
+    Returns the full response dict from the addon containing
+    ``status`` (``"ok"`` or ``"error"``), ``result`` (on success),
+    ``message`` (on error), and optionally ``stdout``/``stderr``
+    captured during execution.
+
+    Raises ``ConnectionError`` when Blender is unreachable.
     """
     host, port = get_connection_params()
     request = json.dumps({"type": "execute", "code": code}) + "\0"
@@ -65,14 +68,5 @@ def send_code(code: str) -> dict[str, object]:
 
         # Parse only up to the first null byte delimiter.
         line, _sep, _rest = buf.partition(b"\0")
-        response = json.loads(line.decode("utf-8"))
-
-        if response.get("status") == "error":
-            raise RuntimeError(
-                "Blender error: {:s}".format(response.get("message", "Unknown error"))
-            )
-
-        result = response.get("result")
-        if not isinstance(result, dict):
-            raise TypeError("Expected dict from Blender, got {!r}".format(type(result)))
-        return result
+        response: dict[str, object] = json.loads(line.decode("utf-8"))
+        return response

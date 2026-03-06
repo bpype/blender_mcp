@@ -24,9 +24,7 @@ def register(mcp: FastMCP) -> None:
         The code runs in Blender's Python environment with full access to ``bpy``.
         To return data, assign a JSON-serialisable dict to a variable named ``result``.
         """
-        value = send_code(code)
-        assert isinstance(value, dict), "Expected dict from `send_code`, got {!r}".format(type(value))
-        return json.dumps(value)
+        return json.dumps(send_code(code))
 
     @mcp.tool()
     def execute_blender_code_for_cli(blend_file: str, code: str) -> str:

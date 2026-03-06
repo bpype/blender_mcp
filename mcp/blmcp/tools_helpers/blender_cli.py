@@ -127,8 +127,12 @@ def synced_blend_for_cli(blend_file: str) -> Generator[str, None, None]:
             yield blend_file
             return
 
-        is_dirty = response.get("is_dirty", False)
-        blender_filepath = str(response.get("filepath", ""))
+        if response.get("status") != "ok":
+            raise RuntimeError(str(response.get("message", "Unknown error")))
+        result = response["result"]
+        assert isinstance(result, dict)
+        is_dirty = result.get("is_dirty", False)
+        blender_filepath = str(result.get("filepath", ""))
 
         # Compare normalised paths to see if this is the same file.
         if (
@@ -144,10 +148,12 @@ def synced_blend_for_cli(blend_file: str) -> Generator[str, None, None]:
 
         # Dirty file, save a numbered copy.
         temp_path = _numbered_blend_path(blend_file)
-        send_code(
+        save_response = send_code(
             "import bpy\n"
             "bpy.ops.wm.save_as_mainfile(filepath={!r}, copy=True)\n".format(temp_path)
         )
+        if save_response.get("status") != "ok":
+            raise RuntimeError(str(save_response.get("message", "Unknown error")))
         yield temp_path
     finally:
         if temp_path is not None:
