@@ -27,7 +27,8 @@ Static Source Code Checking
    * check_pylint:    Run pylint linting.
    * check_ruff:      Run ruff linting.
    * check_vulture:   Run vulture dead-code detection.
-   * check_all:       Run all checks (ruff, mypy, vulture, license, ascii).
+   * check_namespace: Verify __all__ is defined in all Python modules.
+   * check_all:       Run all checks (ruff, mypy, vulture, license, ascii, namespace).
 
 Reference Data
    * update_reference_manual:
@@ -71,7 +72,7 @@ check_ascii:
 		{ echo "ERROR: non-ASCII characters found"; exit 1; }
 
 check_mypy:
-	@! .venv/bin/mypy $(PYTHON_SOURCE_DIRS_TO_CHECK) scripts/ 2>&1 | grep -v '^stubs/' | grep ': error:' || \
+	@! $(PYTHON) -m mypy --exclude 'data/api/examples/' $(PYTHON_SOURCE_DIRS_TO_CHECK) scripts/ 2>&1 | grep -v '^stubs/' | grep ': error:' || \
 		{ echo "mypy: found errors"; exit 1; }
 
 check_pylint:
@@ -87,7 +88,10 @@ check_vulture:
 		--ignore-names 'bl_*,draw,execute,exclude' \
 		--min-confidence 61
 
-check_all: check_ruff check_mypy check_vulture check_license check_ascii
+check_namespace:
+	@$(PYTHON) scripts/check_namespace.py --skip mcp/blmcp/data/api/examples $(PYTHON_SOURCE_DIRS_TO_CHECK)
+
+check_all: check_ruff check_mypy check_vulture check_license check_ascii check_namespace
 
 readme_update:
 	$(PYTHON) scripts/readme_update_from_tools.py

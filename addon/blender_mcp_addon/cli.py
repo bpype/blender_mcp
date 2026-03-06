@@ -17,8 +17,8 @@ import argparse
 from . import execute_blocking
 from . import mcp_to_blender_server as server
 
-DEFAULT_HOST = "localhost"
-DEFAULT_PORT = 9876
+_DEFAULT_HOST = "localhost"
+_DEFAULT_PORT = 9876
 
 
 def cli_execute(argv: list[str]) -> int:
@@ -33,9 +33,9 @@ def cli_execute(argv: list[str]) -> int:
             "although Blender will be unresponsive to user input until the server exits."
         ),
     )
-    parser.add_argument("--host", default=DEFAULT_HOST, help="Host to bind to.")
+    parser.add_argument("--host", default=_DEFAULT_HOST, help="Host to bind to.")
     parser.add_argument(
-        "--port", type=int, default=DEFAULT_PORT,
+        "--port", type=int, default=_DEFAULT_PORT,
         help="Port to listen on.",
     )
     args = parser.parse_args(argv)

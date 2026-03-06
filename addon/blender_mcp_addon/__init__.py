@@ -18,24 +18,24 @@ from . import execute_interactive
 from . import mcp_to_blender_server as server
 
 # Defaults used for preferences.
-DEFAULT_HOST = "localhost"
-DEFAULT_PORT = 9876
-PORT_MIN = 1024
-PORT_MAX = 65535
+_DEFAULT_HOST = "localhost"
+_DEFAULT_PORT = 9876
+_PORT_MIN = 1024
+_PORT_MAX = 65535
 
 # Default seconds to wait after registration before auto-starting the server.
 # Avoids adding work to Blender's startup sequence.
-AUTOSTART_DELAY = 1.0
+_AUTOSTART_DELAY = 1.0
 
 # Store CLI only for correct register/unregister.
 _cli_commands: list[object] = []
 
 # This error is shown in the UI & command line when online access isn't enabled.
 # NOTE(@ideasman42): we could consider `localhost` to be acceptable, this is a slightly grey area.
-state_offline_error_message = "Online access must be enabled in the system preferences"
+_state_offline_error_message = "Online access must be enabled in the system preferences"
 
 
-class State:
+class _State:
     """
     Module-level runtime state that is not persisted across sessions.
     """
@@ -44,38 +44,38 @@ class State:
     autostart_error: str = ""
 
 
-def state_startup_info_set(error: str) -> None:
+def _state_startup_info_set(error: str) -> None:
     """
     Store a startup error message to display in the preferences UI.
     """
-    State.autostart_error = error
+    _State.autostart_error = error
 
 
-def state_startup_info_clear() -> None:
+def _state_startup_info_clear() -> None:
     """
     Clear any startup error so it no longer appears in the preferences UI.
     """
-    State.autostart_error = ""
+    _State.autostart_error = ""
 
 
-def state_startup_online_ok_or_error() -> bool:
+def _state_startup_online_ok_or_error() -> bool:
     """
     Return True when online access is permitted, otherwise store an error and return False.
     """
     if bpy.app.online_access:
         return True
-    state_startup_info_set(state_offline_error_message)
+    _state_startup_info_set(_state_offline_error_message)
     if bpy.app.background:
-        print("Error: {:s}".format(state_offline_error_message))
+        print("Error: {:s}".format(_state_offline_error_message))
         print("  Use --online-mode to enable online access from the command line")
     return False
 
 
-class BlenderMCPPreferences(bpy.types.AddonPreferences):  # type: ignore[misc]
+class _BlenderMCPPreferences(bpy.types.AddonPreferences):  # type: ignore[misc]
     bl_idname = __package__
 
-    host: StringProperty(name="Host", default=DEFAULT_HOST)  # type: ignore[valid-type]
-    port: IntProperty(name="Port", default=DEFAULT_PORT, min=PORT_MIN, max=PORT_MAX)  # type: ignore[valid-type]
+    host: StringProperty(name="Host", default=_DEFAULT_HOST)  # type: ignore[valid-type]
+    port: IntProperty(name="Port", default=_DEFAULT_PORT, min=_PORT_MIN, max=_PORT_MAX)  # type: ignore[valid-type]
     use_autostart: BoolProperty(  # type: ignore[valid-type]
         name="Auto Start",
         description=(
@@ -90,7 +90,7 @@ class BlenderMCPPreferences(bpy.types.AddonPreferences):  # type: ignore[misc]
             "Seconds to wait after Blender starts before auto-starting the server.\n"
             "Avoids adding work to Blender's startup sequence"
         ),
-        default=AUTOSTART_DELAY,
+        default=_AUTOSTART_DELAY,
         min=0.0,
         max=30.0,
         step=10,
@@ -178,11 +178,11 @@ class BlenderMCPPreferences(bpy.types.AddonPreferences):  # type: ignore[misc]
             layout.operator("blmcp.server_start", icon="PLAY")
             layout.label(text="Server is stopped", icon="X")
 
-        if State.autostart_error:
-            layout.label(text=State.autostart_error, icon="ERROR")
+        if _State.autostart_error:
+            layout.label(text=_State.autostart_error, icon="ERROR")
 
 
-class BLMCP_OT_server_start(bpy.types.Operator):  # type: ignore[misc]
+class _BLMCP_OT_server_start(bpy.types.Operator):  # type: ignore[misc]
     bl_idname = "blmcp.server_start"
     bl_label = "Start MCP Server"
     bl_description = "Start the MCP socket server"
@@ -193,11 +193,11 @@ class BLMCP_OT_server_start(bpy.types.Operator):  # type: ignore[misc]
         if bpy.app.background:
             self.report({"ERROR"}, "Use `--command blender_mcp` to start the MCP server in background mode")
             return {"CANCELLED"}
-        if not state_startup_online_ok_or_error():
-            self.report({"ERROR"}, state_offline_error_message)
+        if not _state_startup_online_ok_or_error():
+            self.report({"ERROR"}, _state_offline_error_message)
             return {"CANCELLED"}
         # Clear any stale autostart error so it does not persist in the UI.
-        state_startup_info_clear()
+        _state_startup_info_clear()
         prefs = context.preferences.addons[__package__].preferences
         server.timer_internal_vars_calc(
             active=prefs.timer_interval_active,
@@ -208,7 +208,7 @@ class BLMCP_OT_server_start(bpy.types.Operator):  # type: ignore[misc]
         try:
             server.start(prefs.host, prefs.port)
         except Exception as ex:  # pylint: disable=broad-exception-caught
-            state_startup_info_set(str(ex))
+            _state_startup_info_set(str(ex))
             self.report({"ERROR"}, str(ex))
             return {"CANCELLED"}
         bpy.app.timers.register(execute_interactive.run, first_interval=server.TIMER_INTERVAL_ACTIVE, persistent=True)
@@ -216,7 +216,7 @@ class BLMCP_OT_server_start(bpy.types.Operator):  # type: ignore[misc]
         return {"FINISHED"}
 
 
-class BLMCP_OT_server_stop(bpy.types.Operator):  # type: ignore[misc]
+class _BLMCP_OT_server_stop(bpy.types.Operator):  # type: ignore[misc]
     bl_idname = "blmcp.server_stop"
     bl_label = "Stop MCP Server"
     bl_description = "Stop the MCP socket server"
@@ -224,7 +224,7 @@ class BLMCP_OT_server_stop(bpy.types.Operator):  # type: ignore[misc]
     def execute(self, context: bpy.types.Context) -> set[str]:
         del context
         # Clear any stale autostart error so it does not persist in the UI.
-        state_startup_info_clear()
+        _state_startup_info_clear()
         server.stop()
         if bpy.app.timers.is_registered(execute_interactive.run):
             bpy.app.timers.unregister(execute_interactive.run)
@@ -232,12 +232,12 @@ class BLMCP_OT_server_stop(bpy.types.Operator):  # type: ignore[misc]
         return {"FINISHED"}
 
 
-def autostart_timer() -> None:
+def _autostart_timer() -> None:
     """
     Deferred timer callback that starts the server when ``use_autostart``
     is enabled. Runs after a delay to avoid slowing down Blender's startup.
     """
-    if not state_startup_online_ok_or_error():
+    if not _state_startup_online_ok_or_error():
         return
     prefs = bpy.context.preferences.addons[__package__].preferences
     server.timer_internal_vars_calc(
@@ -251,42 +251,42 @@ def autostart_timer() -> None:
     try:
         server.start(prefs.host, prefs.port)
     except Exception as ex:  # pylint: disable=broad-exception-caught
-        state_startup_info_set(str(ex))
+        _state_startup_info_set(str(ex))
         return
     bpy.app.timers.register(execute_interactive.run, first_interval=server.TIMER_INTERVAL_ACTIVE, persistent=True)
 
 
-def cli_execute_handler(argv: list[str]) -> int:
+def _cli_execute_handler(argv: list[str]) -> int:
     """
     Callback for the CLI: ``blender -c blender_mcp``.
     """
-    if not state_startup_online_ok_or_error():
+    if not _state_startup_online_ok_or_error():
         return 1
     from .cli import cli_execute
     return cli_execute(argv)
 
 
-classes = (
-    BlenderMCPPreferences,
-    BLMCP_OT_server_start,
-    BLMCP_OT_server_stop,
+_classes = (
+    _BlenderMCPPreferences,
+    _BLMCP_OT_server_start,
+    _BLMCP_OT_server_stop,
 )
 
 
 def register() -> None:
-    for cls in classes:
+    for cls in _classes:
         bpy.utils.register_class(cls)
-    _cli_commands.append(bpy.utils.register_cli_command("blender_mcp", cli_execute_handler))
+    _cli_commands.append(bpy.utils.register_cli_command("blender_mcp", _cli_execute_handler))
 
     # Defer auto-start so the server does not slow down Blender's startup.
     if not bpy.app.background:
-        if not state_startup_online_ok_or_error():
+        if not _state_startup_online_ok_or_error():
             return
 
         prefs = bpy.context.preferences.addons[__package__].preferences
         if prefs.use_autostart:
             bpy.app.timers.register(
-                autostart_timer,
+                _autostart_timer,
                 first_interval=prefs.autostart_delay,
                 persistent=True,
             )
@@ -297,11 +297,11 @@ def unregister() -> None:
         bpy.utils.unregister_cli_command(cmd)
     _cli_commands.clear()
 
-    if bpy.app.timers.is_registered(autostart_timer):
-        bpy.app.timers.unregister(autostart_timer)
+    if bpy.app.timers.is_registered(_autostart_timer):
+        bpy.app.timers.unregister(_autostart_timer)
 
     server.stop()
     if bpy.app.timers.is_registered(execute_interactive.run):
         bpy.app.timers.unregister(execute_interactive.run)
-    for cls in reversed(classes):
+    for cls in reversed(_classes):
         bpy.utils.unregister_class(cls)

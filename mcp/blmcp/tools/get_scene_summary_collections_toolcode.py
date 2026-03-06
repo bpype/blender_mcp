@@ -11,7 +11,12 @@ __all__ = (
     "main",
 )
 
-from typing import NamedTuple
+from typing import Any, NamedTuple
+
+# Placeholder types for Blender Python objects (no stubs available).
+_Object = Any
+_Collection = Any
+_LayerCollection = Any
 
 
 class Result(NamedTuple):
@@ -20,11 +25,11 @@ class Result(NamedTuple):
     active_object: str | None
     object_mode: str | None
     camera_object: str | None
-    collections: list[dict[str, object]]
+    collections: list[dict[str, Any]]
 
 
-def _object_info(obj: object) -> dict[str, object]:
-    info: dict[str, object] = {
+def _object_info(obj: _Object) -> dict[str, Any]:
+    info: dict[str, Any] = {
         "name": obj.name,
         "type": obj.type,
         "parent": obj.parent.name if obj.parent else None,
@@ -38,7 +43,7 @@ def _object_info(obj: object) -> dict[str, object]:
     return info
 
 
-def _layer_collection_tree(lc: object) -> dict[str, object]:
+def _layer_collection_tree(lc: _LayerCollection) -> dict[str, Any]:
     col = lc.collection
     return {
         "name": col.name,

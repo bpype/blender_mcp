@@ -15,15 +15,15 @@ import json
 import os
 import socket
 
-DEFAULT_HOST = "localhost"
-DEFAULT_PORT = 9876
-TIMEOUT = 300.0
+_DEFAULT_HOST = "localhost"
+_DEFAULT_PORT = 9876
+_TIMEOUT = 300.0
 _RECV_BUFFER_SIZE = 65536
 
 
 def get_connection_params() -> tuple[str, int]:
-    host = os.environ.get("BLENDER_MCP_HOST", DEFAULT_HOST)
-    port = int(os.environ.get("BLENDER_MCP_PORT", str(DEFAULT_PORT)))
+    host = os.environ.get("BLENDER_MCP_HOST", _DEFAULT_HOST)
+    port = int(os.environ.get("BLENDER_MCP_PORT", str(_DEFAULT_PORT)))
     return host, port
 
 
@@ -39,7 +39,7 @@ def send_code(code: str) -> dict[str, object]:
     request = json.dumps({"type": "execute", "code": code}) + "\0"
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.settimeout(TIMEOUT)
+        sock.settimeout(_TIMEOUT)
         try:
             sock.connect((host, port))
         except ConnectionRefusedError as ex:

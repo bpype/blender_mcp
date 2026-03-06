@@ -21,6 +21,10 @@ Examples::
    ANTHROPIC_API_KEY=sk-... python chat_client.py claude --model claude-sonnet-4-20250514
 """
 
+__all__ = (
+    "main",
+)
+
 import argparse
 import asyncio
 import json

@@ -213,7 +213,7 @@ def _usage_probability_for_audio(data: Any, scene: Any) -> tuple[str, dict[str, 
 
 _UsageFn = Callable[[Any, Any], tuple[str, dict[str, int]]]
 
-USAGE_PROBABILITY_FUNCTIONS: tuple[_UsageFn, ...] = (
+_USAGE_PROBABILITY_FUNCTIONS: tuple[_UsageFn, ...] = (
     _usage_probability_for_animation,
     _usage_probability_for_rendering,
     _usage_probability_for_scripting,
@@ -241,7 +241,7 @@ def main(params: None) -> Result:
     # Each function scores a single use-case by accumulating
     # (contribution, certainty) signals and averaging them.
     usages: dict[str, dict[str, int]] = {}
-    for fn in USAGE_PROBABILITY_FUNCTIONS:
+    for fn in _USAGE_PROBABILITY_FUNCTIONS:
         use_case, scores = fn(data, scene)
         usages[use_case] = scores
 

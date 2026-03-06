@@ -13,8 +13,6 @@ Blender's main thread.
 
 __all__ = (
     "TIMER_INTERVAL_ACTIVE",
-    "TIMER_INTERVAL_IDLE",
-    "TIMER_INTERVAL_IDLE_DELAY",
     "is_running",
     "poll",
     "poll_blocking",
@@ -36,9 +34,9 @@ import traceback
 # Seconds between main-thread timer ticks.
 TIMER_INTERVAL_ACTIVE = 0.05
 # Seconds between main-thread timer ticks while idle (no pending work).
-TIMER_INTERVAL_IDLE = 1.0
+_TIMER_INTERVAL_IDLE = 1.0
 # Seconds of inactivity before switching to the idle interval.
-TIMER_INTERVAL_IDLE_DELAY = 5.0
+_TIMER_INTERVAL_IDLE_DELAY = 5.0
 
 
 class _TimerState:
@@ -57,8 +55,8 @@ class _TimerState:
 
     def __init__(self) -> None:
         self.interval_active: float = TIMER_INTERVAL_ACTIVE
-        self.interval_idle: float = TIMER_INTERVAL_IDLE
-        self.interval_idle_delay: float = TIMER_INTERVAL_IDLE_DELAY
+        self.interval_idle: float = _TIMER_INTERVAL_IDLE
+        self.interval_idle_delay: float = _TIMER_INTERVAL_IDLE_DELAY
         # Number of active-rate ticks before switching to idle.
         self.idle_countdown_reset: int = 0
         # Current countdown. When zero, `timer_idle_interval` returns idle.
@@ -91,7 +89,7 @@ def timer_internal_vars_calc(
     # Round up so the delay is never shorter than requested.
     _timer.idle_countdown_reset = math.ceil(_timer.interval_idle_delay / _timer.interval_active)
     _timer.idle_countdown = _timer.idle_countdown_reset
-    _timer.client_timeout_countdown = max(2, math.ceil(CLIENT_TIMEOUT / _timer.interval_active))
+    _timer.client_timeout_countdown = max(2, math.ceil(_CLIENT_TIMEOUT / _timer.interval_active))
 
 
 def timer_idle_reset() -> None:
@@ -106,7 +104,7 @@ def timer_idle_interval() -> float:
     Return the appropriate timer interval, decrementing the idle countdown.
 
     Returns ``TIMER_INTERVAL_ACTIVE`` while the countdown is positive,
-    then ``TIMER_INTERVAL_IDLE`` once it reaches zero.
+    then ``_TIMER_INTERVAL_IDLE`` once it reaches zero.
     """
     if _timer.idle_countdown > 0:
         _timer.idle_countdown -= 1
@@ -117,14 +115,14 @@ def timer_idle_interval() -> float:
 # When True, print every request and response status to stderr.
 use_log: bool = False
 
-MAX_REQUEST_BYTES = 10 * 1024 * 1024  # 10 MiB.
+_MAX_REQUEST_BYTES = 10 * 1024 * 1024  # 10 MiB.
 # Maximum number of queued incoming connections.
-LISTEN_BACKLOG = 5
-RECV_BUFFER_SIZE = 4096
+_LISTEN_BACKLOG = 5
+_RECV_BUFFER_SIZE = 4096
 # Seconds before a client that has not sent a complete request is closed.
-CLIENT_TIMEOUT = 10.0
+_CLIENT_TIMEOUT = 10.0
 # How often `poll_blocking` checks for shutdown.
-POLL_BLOCKING_TIMEOUT = 1.0
+_POLL_BLOCKING_TIMEOUT = 1.0
 
 timer_internal_vars_calc()
 
@@ -280,7 +278,7 @@ def _service_clients() -> bool:
             continue
 
         try:
-            chunk = client.conn.recv(RECV_BUFFER_SIZE)
+            chunk = client.conn.recv(_RECV_BUFFER_SIZE)
         except BlockingIOError:
             # No data available yet.
             continue
@@ -296,11 +294,11 @@ def _service_clients() -> bool:
         client.buffer.extend(chunk)
 
         # Guard against unbounded input from a misbehaving client.
-        if len(client.buffer) > MAX_REQUEST_BYTES:
+        if len(client.buffer) > _MAX_REQUEST_BYTES:
             try:
                 err = {
                     "status": "error",
-                    "message": "Request exceeds {:d} byte limit".format(MAX_REQUEST_BYTES),
+                    "message": "Request exceeds {:d} byte limit".format(_MAX_REQUEST_BYTES),
                 }
                 client.conn.sendall(_encode_response(err))
             except OSError:
@@ -344,19 +342,19 @@ def _handle_blocking_client(conn: socket.socket) -> bool:
 
     Return ``True`` if a request was executed.
     """
-    conn.settimeout(CLIENT_TIMEOUT)
+    conn.settimeout(_CLIENT_TIMEOUT)
     try:
         buf = bytearray()
         while b"\0" not in buf:
-            chunk = conn.recv(RECV_BUFFER_SIZE)
+            chunk = conn.recv(_RECV_BUFFER_SIZE)
             if not chunk:
                 # Client disconnected.
                 return False
             buf.extend(chunk)
-            if len(buf) > MAX_REQUEST_BYTES:
+            if len(buf) > _MAX_REQUEST_BYTES:
                 err: dict[str, object] = {
                     "status": "error",
-                    "message": "Request exceeds {:d} byte limit".format(MAX_REQUEST_BYTES),
+                    "message": "Request exceeds {:d} byte limit".format(_MAX_REQUEST_BYTES),
                 }
                 conn.sendall(_encode_response(err))
                 return False
@@ -381,7 +379,7 @@ def _handle_blocking_client(conn: socket.socket) -> bool:
         conn.close()
 
 
-def poll_blocking(timeout: float = POLL_BLOCKING_TIMEOUT) -> bool:
+def poll_blocking(timeout: float = _POLL_BLOCKING_TIMEOUT) -> bool:
     """
     Block until a connection arrives (up to *timeout* seconds), then
     handle it synchronously with blocking I/O.
@@ -427,7 +425,7 @@ def start(host: str, port: int) -> None:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.setblocking(False)
         sock.bind((host, port))
-        sock.listen(LISTEN_BACKLOG)
+        sock.listen(_LISTEN_BACKLOG)
     except OSError:
         sock.close()
         raise
