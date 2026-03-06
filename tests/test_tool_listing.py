@@ -227,6 +227,19 @@ EXPECTED_TOOLS = [
         },
     },
     {
+        "name": "get_scene_summary_collections",
+        "description": (
+            "\nReturn the scene's collection hierarchy and their objects.\n\n"
+            "Each collection lists its objects (name, type, parent, data name,\n"
+            "selection, visibility) and nested child collections.\n"
+        ),
+        "inputSchema": {
+            "properties": {},
+            "title": "get_scene_summary_collectionsArguments",
+            "type": "object",
+        },
+    },
+    {
         "name": "get_screenshot_of_window_as_image",
         "description": (
             "\nTake a screenshot of the entire Blender window and return it as a PNG image.\n"
