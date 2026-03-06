@@ -102,18 +102,22 @@ def _run_blender(args: list[str], env: dict[str, str]) -> None:
         )
 
 
-def _drain_stdout(proc: "subprocess.Popen[bytes]") -> None:
+def _drain_stdout(proc: "subprocess.Popen[bytes]") -> list[str]:
     """
-    Read and discard *proc* stdout in a daemon thread.
+    Read *proc* stdout in a daemon thread, collecting lines.
 
     This prevents the pipe buffer from filling up and blocking the child.
+    Returns a list that is appended to from the reader thread.
     """
+    lines: list[str] = []
+
     def _reader() -> None:
         assert proc.stdout is not None
-        for _line in proc.stdout:
-            pass
+        for raw in proc.stdout:
+            lines.append(raw.decode("utf-8", errors="replace"))
 
     threading.Thread(target=_reader, daemon=True).start()
+    return lines
 
 
 def _start_headless_display(env: dict[str, str]) -> "subprocess.Popen[bytes]":
@@ -175,7 +179,12 @@ def _stop_headless_display(proc: "subprocess.Popen[bytes]") -> None:
         os.remove(ini_path)
 
 
-def _wait_for_port(port: int, timeout: int, proc: "subprocess.Popen[bytes]") -> None:
+def _wait_for_port(
+        port: int,
+        timeout: int,
+        proc: "subprocess.Popen[bytes]",
+        output: list[str],
+) -> None:
     """
     Block until a TCP connection to *port* on localhost succeeds.
 
@@ -188,7 +197,9 @@ def _wait_for_port(port: int, timeout: int, proc: "subprocess.Popen[bytes]") -> 
         rc = proc.poll()
         if rc is not None:
             raise RuntimeError(
-                "Blender exited with code {:d} before the server became reachable".format(rc)
+                "Blender exited with code {:d} before the server became reachable\n{:s}".format(
+                    rc, "".join(output[-50:]),
+                )
             )
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -198,7 +209,9 @@ def _wait_for_port(port: int, timeout: int, proc: "subprocess.Popen[bytes]") -> 
         except (ConnectionRefusedError, OSError):
             time.sleep(0.2)
     raise RuntimeError(
-        "Port {:d} not reachable within {:d}s".format(port, timeout)
+        "Port {:d} not reachable within {:d}s\n{:s}".format(
+            port, timeout, "".join(output[-50:]),
+        )
     )
 
 
@@ -297,8 +310,8 @@ class _TestServerMixin:
         )
         cls.addClassCleanup(cls._cleanup_blender)
 
-        _drain_stdout(cls._blender_proc)
-        _wait_for_port(cls._port, _TIMEOUT_STARTUP, cls._blender_proc)
+        output = _drain_stdout(cls._blender_proc)
+        _wait_for_port(cls._port, _TIMEOUT_STARTUP, cls._blender_proc, output)
 
         mcp_env = _blender_env(tmpdir)
         mcp_env["BLENDER_MCP_PORT"] = str(cls._port)
