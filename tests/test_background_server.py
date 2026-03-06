@@ -622,6 +622,16 @@ class _TestServerMixin:
             content[0]["text"],
         )
 
+    def test_execute_blender_code_blocked_sys_exit(self) -> None:
+        """Verify that the sandbox blocks sys.exit()."""
+        content = self._call_tool_expect_error("execute_blender_code", {
+            "code": "import sys; sys.exit(1)",
+        })
+        self.assertIn(
+            "RuntimeError: sys.exit() is not allowed in LLM-generated code",
+            content[0]["text"],
+        )
+
     def test_jump_to_tab_by_name_error(self) -> None:
         data = self._test_tool("jump_to_tab_by_name", {"name": "NonExistent"})
         self.assertEqual(data["status"], "error")
