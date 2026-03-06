@@ -47,7 +47,7 @@ _PORT_FOREGROUND = 9877
 _PORT_INTERACTIVE = 9878
 
 # Maximum time to wait for Blender to start (seconds).
-_TIMEOUT_STARTUP = 30
+_TIMEOUT_STARTUP = int(os.environ.get("BLENDER_MCP_TIMEOUT", "10"))
 
 # Tool coverage tracking.
 _all_tools: set[str] = set()
