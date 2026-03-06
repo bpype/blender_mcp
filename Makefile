@@ -1,3 +1,8 @@
+# Optional local overrides (silently skipped when absent).
+# Exported so child processes inherit them as environment variables.
+-include .env
+export
+
 PYTHON ?= python
 PYTHON_SOURCE_DIRS_TO_CHECK = mcp/blmcp/ addon/blender_mcp_addon/ chat_client/
 
@@ -52,7 +57,6 @@ ifdef TESTS_LIST
 	from tests.integration.test_chat_client import TestChatClient; \
 	[print(t.id().rsplit('.', 1)[-2].split('.')[-1] + '.' + t.id().rsplit('.', 1)[-1]) for t in unittest.TestLoader().loadTestsFromTestCase(TestChatClient)]"
 else
-	@test -f .env && export $$(grep -v '^\s*#' .env | xargs) || true; \
 	$(PYTHON) tests/integration/test_chat_client.py -v $$(echo '$(TESTS)' | tr ':' ' ')
 endif
 
