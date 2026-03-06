@@ -398,6 +398,16 @@ class _TestServerMixin:
         )
         return json.loads(text_item["text"])
 
+    def setUp(self) -> None:
+        """Reload the default scene so each test starts from a clean state."""
+        self._client.call_tool("execute_blender_code", {
+            "code": (
+                "import bpy\n"
+                "bpy.ops.wm.read_homefile(use_empty=False)\n"
+                "result = {'reset': True}\n"
+            ),
+        })
+
     # -----------------------------------------------------------------
     # Interactive tools.
 
@@ -426,8 +436,11 @@ class _TestServerMixin:
 
     def test_get_blendfile_summary_path_info(self) -> None:
         data = self._test_tool("get_blendfile_summary_path_info")
-        self.assertTrue(data["is_saved"])
-        self.assertEqual(data["filepath"], self._blend_path)
+        self.assertEqual(data["filepath"], "")
+        self.assertFalse(data["is_saved"])
+        self.assertIsNone(data["age_seconds"])
+        self.assertIsNone(data["file_size_bytes"])
+        self.assertIsNone(data["backups"])
 
     def test_get_blendfile_summary_usage_guess(self) -> None:
         data = self._test_tool("get_blendfile_summary_usage_guess")
