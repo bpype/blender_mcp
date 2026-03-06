@@ -539,6 +539,61 @@ class _TestServerMixin:
         self.assertIn("'NonExistent' not found", data["message"])
         self.assertIn("Cube", data["message"])
 
+    def test_get_scene_summary_collections(self) -> None:
+        data = self._test_tool("get_scene_summary_collections")
+        self.assertEqual(data, {
+            "scene_name": "Scene",
+            "active_workspace": "Layout",
+            "active_object": "Cube",
+            "object_mode": "OBJECT",
+            "camera_object": "Camera",
+            "collections": [
+                {
+                    "name": "Scene Collection",
+                    "exclude": False,
+                    "hide_viewport": False,
+                    "objects": [],
+                    "children": [
+                        {
+                            "name": "Collection",
+                            "exclude": False,
+                            "hide_viewport": False,
+                            "objects": [
+                                {
+                                    "name": "Camera",
+                                    "type": "CAMERA",
+                                    "parent": None,
+                                    "data_name": "Camera",
+                                    "selected": False,
+                                    "visible": True,
+                                    "hide_viewport": False,
+                                },
+                                {
+                                    "name": "Cube",
+                                    "type": "MESH",
+                                    "parent": None,
+                                    "data_name": "Cube",
+                                    "selected": True,
+                                    "visible": True,
+                                    "hide_viewport": False,
+                                },
+                                {
+                                    "name": "Light",
+                                    "type": "LIGHT",
+                                    "parent": None,
+                                    "data_name": "Light",
+                                    "selected": False,
+                                    "visible": True,
+                                    "hide_viewport": False,
+                                },
+                            ],
+                            "children": [],
+                        },
+                    ],
+                },
+            ],
+        })
+
     # -----------------------------------------------------------------
     # Navigation tools.
 
