@@ -22,6 +22,7 @@ import glob
 import json
 import os
 import shlex
+import shutil
 import signal
 import socket
 import subprocess
@@ -699,10 +700,6 @@ class _TestServerMixin:
 # -----------------------------------------------------------------------------
 # Concrete test classes.
 
-@unittest.skipUnless(
-    os.environ.get("BLENDER_BIN") and os.environ.get("BLENDER_MCP"),
-    "BLENDER_BIN and BLENDER_MCP environment variables must be set",
-)
 class TestBackgroundServer(_TestServerMixin, unittest.TestCase):
     """
     Run all tests against Blender in ``--background`` mode.
@@ -712,10 +709,6 @@ class TestBackgroundServer(_TestServerMixin, unittest.TestCase):
     _port = _PORT_BACKGROUND
 
 
-@unittest.skipUnless(
-    os.environ.get("BLENDER_BIN") and os.environ.get("BLENDER_MCP"),
-    "BLENDER_BIN and BLENDER_MCP environment variables must be set",
-)
 class TestForegroundServer(_TestServerMixin, unittest.TestCase):
     """
     Run all tests against Blender without ``--background`` (full GUI).
@@ -725,10 +718,6 @@ class TestForegroundServer(_TestServerMixin, unittest.TestCase):
     _port = _PORT_FOREGROUND
 
 
-@unittest.skipUnless(
-    os.environ.get("BLENDER_BIN") and os.environ.get("BLENDER_MCP"),
-    "BLENDER_BIN and BLENDER_MCP environment variables must be set",
-)
 class TestInteractiveServer(_TestServerMixin, unittest.TestCase):
     """
     Run all tests against Blender in interactive mode (timer-based polling).
@@ -739,5 +728,52 @@ class TestInteractiveServer(_TestServerMixin, unittest.TestCase):
     _port = _PORT_INTERACTIVE
 
 
+BLENDER_VERSION_MIN = (5, 1)
+
+
+def test_binaries_available() -> bool:
+    """
+    Check required binaries are available, print errors for any that are missing.
+    """
+    blender_bin = os.environ.get("BLENDER_BIN", "blender")
+    blender_mcp = os.environ.get("BLENDER_MCP", "blender-mcp")
+    ok = True
+    if not shutil.which(blender_bin):
+        print("ERROR: '{:s}' not found in PATH (set BLENDER_BIN)".format(blender_bin))
+        ok = False
+    if not shutil.which(blender_mcp):
+        print("ERROR: '{:s}' not found in PATH (set BLENDER_MCP)".format(blender_mcp))
+        ok = False
+    return ok
+
+
+def test_blender_version() -> bool:
+    """
+    Check the Blender version is at least ``BLENDER_VERSION_MIN``.
+    """
+    import re
+    blender_bin = os.environ.get("BLENDER_BIN", "blender")
+    result = subprocess.run(
+        [blender_bin, "--version"],
+        capture_output=True,
+    )
+    output = result.stdout.decode("utf-8", errors="replace")
+    match = re.search(r"Blender\s+(\d+)\.(\d+)", output)
+    if not match:
+        print("ERROR: could not parse Blender version from: {:s}".format(output.strip()))
+        return False
+    version = (int(match.group(1)), int(match.group(2)))
+    if version < BLENDER_VERSION_MIN:
+        print("ERROR: Blender {:d}.{:d} found, {:d}.{:d} or newer required".format(
+            *version, *BLENDER_VERSION_MIN,
+        ))
+        return False
+    return True
+
+
 if __name__ == "__main__":
+    if not test_binaries_available():
+        sys.exit(1)
+    if not test_blender_version():
+        sys.exit(1)
     unittest.main()
