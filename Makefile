@@ -41,6 +41,23 @@ Reference Data
 
      Usage: make update_reference_api API_DIR=/path/to/api
 
+Environment Variables
+   Variables may be set in a .env file (loaded automatically).
+
+   PYTHON              Python interpreter (default: python).
+   BLENDER_BIN         Path to the Blender binary (default: blender).
+   BLENDER_MCP         Path to the blender-mcp command (default: blender-mcp).
+   BLENDER_PATH        Path to the Blender binary used by the MCP server
+                       (default: blender).
+   BLENDER_MCP_HOST    Host the MCP addon listens on (default: localhost).
+   BLENDER_MCP_PORT    Port the MCP addon listens on (default: 9876).
+   BLENDER_MCP_TIMEOUT Startup timeout in seconds for tests (default: 10).
+   BLENDER_MCP_FOREGROUND
+                       When set, run Blender in the foreground during tests.
+   ANTHROPIC_API_KEY   API key for Claude integration tests.
+   ANTHROPIC_MODEL     Model name for Claude tests
+                       (default: claude-sonnet-4-20250514).
+
 endef
 export HELP_TEXT
 
