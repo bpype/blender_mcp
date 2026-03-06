@@ -5,11 +5,8 @@
 """
 Integration test for the full MCP pipeline.
 
-Requires ``BLENDER_BIN`` and ``BLENDER_MCP`` environment variables.
-Run with::
-
-    BLENDER_BIN=/path/to/blender BLENDER_MCP=/path/to/blender-mcp \
-        python -m unittest tests.test_background_server -v
+Defaults to ``blender`` and ``blender-mcp`` from ``PATH``.
+Override with ``BLENDER_BIN`` and ``BLENDER_MCP`` environment variables.
 
 Foreground and interactive tests run headless via a Wayland display
 server (weston). Set ``BLENDER_MCP_FOREGROUND=1`` to use the real
@@ -219,8 +216,8 @@ class _TestServerMixin:
 
     @classmethod
     def setUpClass(cls) -> None:
-        blender_bin = os.environ["BLENDER_BIN"]
-        blender_mcp = os.environ["BLENDER_MCP"]
+        blender_bin = os.environ.get("BLENDER_BIN", "blender")
+        blender_mcp = os.environ.get("BLENDER_MCP", "blender-mcp")
 
         cls._tmpdir = tempfile.TemporaryDirectory()
         tmpdir = cls._tmpdir.name
