@@ -1,12 +1,12 @@
 schema_version = "1.0.0"
 
-id = "blender_mcp_addon"
+id = "mcp"
 version = "0.1.0"
-name = "Blender MCP"
-tagline = "MCP server addon for LLM interaction with Blender"
-maintainer = "Blender MCP Contributors"
+name = "MCP"
+tagline = "MCP server add-on for LLM interaction"
+maintainer = "Blender Lab"
 type = "add-on"
-
+website = "https://projects.blender.org/lab/blender_mcp"
 blender_version_min = "5.1.0"
 
 license = [

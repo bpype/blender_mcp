@@ -580,7 +580,7 @@ class TestChatClient(unittest.TestCase):
                 ],
                 env=env,
             )
-            zips = glob.glob(os.path.join(tmpdir, "blender_mcp_addon-*.zip"))
+            zips = glob.glob(os.path.join(tmpdir, "mcp-*.zip"))
             if not zips:
                 raise RuntimeError("Extension build did not produce a zip")
             st.status("OK")
@@ -608,7 +608,7 @@ class TestChatClient(unittest.TestCase):
                     (
                         "import bpy; "
                         "prefs = bpy.context.preferences.addons"
-                        "['bl_ext.user_default.blender_mcp_addon'].preferences; "
+                        "['bl_ext.user_default.mcp'].preferences; "
                         "prefs.port = {:d}; "
                         "prefs.autostart_delay = 0.0; "
                         "bpy.ops.wm.save_userpref()"
