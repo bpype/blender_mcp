@@ -271,7 +271,11 @@ async def _run(
             else:
                 llm_tools = _mcp_tools_to_claude(mcp_tools)
 
-            if not non_interactive:
+            if non_interactive:
+                print(
+                    "Connected to MCP server ({:d} tools).".format(len(mcp_tools))
+                )
+            else:
                 print(
                     "Connected to MCP server ({:d} tools). "
                     "Type your message or Ctrl-D to quit.".format(len(mcp_tools))

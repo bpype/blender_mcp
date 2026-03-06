@@ -23,6 +23,7 @@ import http.server
 import inspect
 import json
 import os
+import shlex
 import signal
 import socket
 import subprocess
@@ -45,17 +46,28 @@ if _REPO_DIR not in sys.path:
 # Fixed ports (avoid existing 9876-9878).
 _PORT_BLENDER = 9879
 _PORT_MOCK_LLM = 9880
+_PORT_LLAMA_SERVER = 9881
 
-# Maximum time to wait for Blender to start (seconds).
-_TIMEOUT_STARTUP = 30
+# Maximum time to wait for servers to start (seconds).
+# For llama-server, loading large models can take a while.
+_TIMEOUT_STARTUP = 60
+
+
+if os.environ.get("USE_LLAMA_CXX"):
+    if os.environ.get("USE_ANTHROPIC"):
+        raise RuntimeError("USE_LLAMA_CXX and USE_ANTHROPIC cannot both be set")
+    if not os.environ.get("LLAMA_SERVER_BIN"):
+        raise RuntimeError("USE_LLAMA_CXX requires LLAMA_SERVER_BIN")
+    if not os.environ.get("LLAMA_SERVER_ARGS"):
+        raise RuntimeError("USE_LLAMA_CXX requires LLAMA_SERVER_ARGS")
 
 
 def use_llm_check() -> bool:
-    """True when a real LLM is available (``USE_ANTHROPIC=1``)."""
-    return bool(os.environ.get("USE_ANTHROPIC"))
+    """True when a real LLM is available (``USE_ANTHROPIC=1`` or ``USE_LLAMA_CXX=1``)."""
+    return bool(os.environ.get("USE_ANTHROPIC") or os.environ.get("USE_LLAMA_CXX"))
 
 
-use_llm_text = "This test requires a real LLM connected"
+use_llm_text = "This test requires a real LLM (USE_ANTHROPIC or USE_LLAMA_CXX)"
 
 
 def use_screenshot_check() -> bool:
@@ -195,6 +207,38 @@ def _wait_for_port(port: int, timeout: int, proc: "subprocess.Popen[bytes]") -> 
             time.sleep(0.2)
     raise RuntimeError(
         "Port {:d} not reachable within {:d}s".format(port, timeout)
+    )
+
+
+def _wait_for_health(
+    port: int, timeout: int, proc: "subprocess.Popen[bytes]",
+) -> None:
+    """
+    Block until ``http://localhost:{port}/health`` returns 200.
+
+    Used for llama-server which opens the port before the model is loaded
+    (returning 503 until ready).
+    """
+    import urllib.error
+    import urllib.request
+
+    url = "http://localhost:{:d}/health".format(port)
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        rc = proc.poll()
+        if rc is not None:
+            raise RuntimeError(
+                "llama-server exited with code {:d} before becoming healthy".format(rc)
+            )
+        try:
+            with urllib.request.urlopen(url, timeout=2) as resp:
+                if resp.status == 200:
+                    return
+        except (urllib.error.URLError, OSError):
+            pass
+        time.sleep(1)
+    raise RuntimeError(
+        "llama-server health check not passing within {:d}s".format(timeout)
     )
 
 
@@ -359,6 +403,46 @@ def _create_venv() -> str:
     return venv_python
 
 
+def _start_llama_server(
+    port: int,
+    env: dict[str, str],
+) -> "subprocess.Popen[bytes]":
+    """
+    Start ``llama-server`` from ``LLAMA_SERVER_BIN`` on *port*.
+
+    Extra flags come from ``LLAMA_SERVER_ARGS`` (shell-quoted).
+    The port is always provided by the test harness via ``--port``;
+    do not include ``--port`` in ``LLAMA_SERVER_ARGS``.
+
+    Returns the process handle. The caller must terminate it.
+    """
+    llama_bin = os.environ["LLAMA_SERVER_BIN"]
+    extra_args = shlex.split(os.environ["LLAMA_SERVER_ARGS"])
+    cmd = [llama_bin, "--port", str(port)] + extra_args
+    print("\n    command: {:s}".format(shlex.join(cmd)), flush=True)
+
+    verbose = bool(os.environ.get("LLAMA_SERVER_VERBOSE"))
+    if verbose:
+        proc: subprocess.Popen[bytes] = subprocess.Popen(cmd, env=env)
+    else:
+        proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            env=env,
+        )
+        _drain_stdout(proc)
+    return proc
+
+
+def _stop_llama_server(proc: "subprocess.Popen[bytes]") -> None:
+    """Terminate a llama-server process."""
+    proc.terminate()
+    proc.wait(timeout=10)
+    if proc.stdout is not None:
+        proc.stdout.close()
+
+
 def _start_mock_llm(port: int) -> http.server.HTTPServer:
     """
     Start a mock OpenAI-compatible HTTP server on a daemon thread.
@@ -443,6 +527,7 @@ class TestChatClient(unittest.TestCase):
     _venv_python: str
     _blender_proc: subprocess.Popen[bytes]
     _mock_server: http.server.HTTPServer
+    _llama_server_proc: subprocess.Popen[bytes] | None
     _blender_mcp_cmd: str
     _blender_bin: str
     _env: dict[str, str]
@@ -537,6 +622,18 @@ class TestChatClient(unittest.TestCase):
             cls.addClassCleanup(cls._mock_server.shutdown)
             st.status("OK")
 
+        # -----------------------
+        # llama-server (optional)
+        cls._llama_server_proc = None
+        if os.environ.get("USE_LLAMA_CXX"):
+            with _StatusReport("Starting llama-server (port {:d})".format(_PORT_LLAMA_SERVER)) as st:
+                cls._llama_server_proc = _start_llama_server(_PORT_LLAMA_SERVER, env)
+                cls.addClassCleanup(_stop_llama_server, cls._llama_server_proc)
+                st.status("OK")
+            with _StatusReport("Waiting for llama-server to load model") as st:
+                _wait_for_health(_PORT_LLAMA_SERVER, _TIMEOUT_STARTUP, cls._llama_server_proc)
+                st.status("OK")
+
         # -- Store paths for test methods --------------------------------
         cls._blender_mcp_cmd = os.path.join(venv_bin_dir, "blender-mcp")
         cls._blender_bin = blender_bin
@@ -591,8 +688,31 @@ class TestChatClient(unittest.TestCase):
             "Expected a tool call in output.\n" + self._last_output_info,
         )
 
+    @unittest.skipUnless(os.environ.get("USE_LLAMA_CXX"), "USE_LLAMA_CXX must be set")
+    def test_chat_client_for_primitive_llm(self) -> None:
+        """
+        Basic tool call via llama-server with an explicit tool name in the prompt.
+
+        The prompt names the tool directly so this can run on weak models
+        that struggle to select tools on their own. Good for testing if
+        an LLM/MCP is properly hooked up.
+        """
+        stdout_text, _stderr_text = self._run_chat_client(
+            "Use get_object_detail_summary to describe the object named 'Cube'.",
+            ["openai", "--api-url", "http://localhost:{:d}".format(_PORT_LLAMA_SERVER)],
+            # Running locally can be _very_ slow, allow a long time.
+            timeout=500,
+        )
+        self.assertIn("Cube", stdout_text, "Expected 'Cube' in output.\n" + self._last_output_info)
+        self.assertTrue(
+            "get_object_detail_summary" in stdout_text
+            or "get_scene_summary_collections" in stdout_text
+            or "execute_blender_code" in stdout_text,
+            "Expected a tool call in output.\n" + self._last_output_info,
+        )
+
     @unittest.skipUnless(use_llm_check(), use_llm_text)
-    def test_chat_client_claude_rotate_cube(self) -> None:
+    def test_chat_client_rotate_cube(self) -> None:
         """
         Rotate the default cube via LLM and verify the transform.
         """
@@ -686,7 +806,9 @@ class TestChatClient(unittest.TestCase):
         return stdout_text, stderr_text
 
     def _llm_provider_args(self) -> list[str]:
-        """Return provider arguments for the real LLM (Claude)."""
+        """Return provider arguments for the real LLM (Claude or llama-server)."""
+        if os.environ.get("USE_LLAMA_CXX"):
+            return ["openai", "--api-url", "http://localhost:{:d}".format(_PORT_LLAMA_SERVER)]
         model = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-20250514")
         return ["claude", "--model", model]
 

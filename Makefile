@@ -57,6 +57,19 @@ Environment Variables
    ANTHROPIC_API_KEY   API key for Claude integration tests.
    ANTHROPIC_MODEL     Model name for Claude tests
                        (default: claude-sonnet-4-20250514).
+   USE_LLAMA_CXX       When set, run LLM tests using llama-server.
+                       Cannot be combined with USE_ANTHROPIC.
+                       Requires LLAMA_SERVER_BIN and
+                       LLAMA_SERVER_ARGS. Note: many tests may
+                       fail depending on the model's capability.
+   LLAMA_SERVER_BIN    Path to the llama-server binary.
+   LLAMA_SERVER_ARGS   Extra arguments for llama-server
+                       (e.g. --jinja -m model.gguf).
+                       The port is provided by the test harness;
+                       do not include --port.
+   LLAMA_SERVER_VERBOSE
+                       When set, forward llama-server output to
+                       the terminal.
 
 endef
 export HELP_TEXT
