@@ -22,8 +22,6 @@ _MAX_BACKUPS = 32
 
 class Result(NamedTuple):
     filepath: str
-    filename: str
-    directory: str
     is_saved: bool
     is_dirty: bool
     age_seconds: float | None = None
@@ -59,8 +57,6 @@ def main(params: None) -> Result:
 
     return Result(
         filepath=filepath,
-        filename=os.path.basename(filepath) if filepath else "",
-        directory=os.path.dirname(filepath) if filepath else "",
         is_saved=bool(filepath),
         is_dirty=bpy.data.is_dirty,
         age_seconds=age,
