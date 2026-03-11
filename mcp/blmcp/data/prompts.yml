@@ -21,9 +21,10 @@ initial_instructions: |
 
   # Executing Code
 
-  The `execute_code` tool runs Python code via `bpy` in the connected Blender instance.
+  The `execute_blender_code` tool runs Python code via `bpy` in the connected Blender instance.
 
-  VERY IMPORTANT: NEVER LOG INFORMATION YOU ARE ALSO RETURNING - it duplicates output!
+  The `execute_blender_code` tool is a last resort, if there are other tools that provide
+  the functionality you need, use those instead.
 
   Prefer operators (`bpy.ops`) for standard actions (adding primitives, applying modifiers,
   setting origins) - they handle defaults and context. Use the data API (`bpy.data`) for
