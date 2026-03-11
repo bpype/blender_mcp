@@ -79,7 +79,7 @@ class _BlenderMCPPreferences(bpy.types.AddonPreferences):  # type: ignore[misc]
     use_autostart: BoolProperty(  # type: ignore[valid-type]
         name="Auto Start",
         description=(
-            "Automatically start the MCP server when Blender starts.\n"
+            "Automatically start the MCP bridge server when Blender starts.\n"
             "(Not used in background mode)"
         ),
         default=True,
@@ -184,14 +184,14 @@ class _BlenderMCPPreferences(bpy.types.AddonPreferences):  # type: ignore[misc]
 
 class _BLMCP_OT_server_start(bpy.types.Operator):  # type: ignore[misc]
     bl_idname = "blmcp.server_start"
-    bl_label = "Start MCP Server"
-    bl_description = "Start the MCP socket server"
+    bl_label = "Start MCP Bridge Server"
+    bl_description = "Start the MCP socket bridge server that the MCP server can connect to"
 
     def execute(self, context: bpy.types.Context) -> set[str]:
         # Timers do not fire in background mode. Use the CLI command instead:
         # `blender --background file.blend --command blender_mcp`.
         if bpy.app.background:
-            self.report({"ERROR"}, "Use `--command blender_mcp` to start the MCP server in background mode")
+            self.report({"ERROR"}, "Use `--command blender_mcp` to start the MCP bridge server in background mode")
             return {"CANCELLED"}
         if not _state_startup_online_ok_or_error():
             self.report({"ERROR"}, _state_offline_error_message)
@@ -219,7 +219,7 @@ class _BLMCP_OT_server_start(bpy.types.Operator):  # type: ignore[misc]
 class _BLMCP_OT_server_stop(bpy.types.Operator):  # type: ignore[misc]
     bl_idname = "blmcp.server_stop"
     bl_label = "Stop MCP Server"
-    bl_description = "Stop the MCP socket server"
+    bl_description = "Stop the MCP Bridge Server"
 
     def execute(self, context: bpy.types.Context) -> set[str]:
         del context
@@ -228,7 +228,7 @@ class _BLMCP_OT_server_stop(bpy.types.Operator):  # type: ignore[misc]
         server.stop()
         if bpy.app.timers.is_registered(execute_interactive.run):
             bpy.app.timers.unregister(execute_interactive.run)
-        self.report({"INFO"}, "MCP server stopped")
+        self.report({"INFO"}, "MCP bridge server stopped")
         return {"FINISHED"}
 
 
