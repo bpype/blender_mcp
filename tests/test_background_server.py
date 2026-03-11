@@ -46,8 +46,14 @@ _PORT_BACKGROUND = 9876
 _PORT_FOREGROUND = 9877
 _PORT_INTERACTIVE = 9878
 
+# Scale all timeouts (e.g. `GLOBAL_TIMEOUT_SCALE=2` doubles every limit).
+_TIMEOUT_SCALE = float(os.environ.get("GLOBAL_TIMEOUT_SCALE", "1"))
+
 # Maximum time to wait for Blender to start (seconds).
-_TIMEOUT_STARTUP = int(os.environ.get("BLENDER_MCP_TIMEOUT", "10"))
+_TIMEOUT_STARTUP = int(int(os.environ.get("BLENDER_MCP_TIMEOUT", "10")) * _TIMEOUT_SCALE)
+
+# Maximum time to wait for a local process to respond or exit (seconds).
+_TIMEOUT_LOCAL_PROC = int(10 * _TIMEOUT_SCALE)
 
 # Tool coverage tracking.
 _all_tools: set[str] = set()
@@ -155,7 +161,7 @@ def _start_headless_display(env: dict[str, str]) -> "subprocess.Popen[bytes]":
     proc = subprocess.Popen(cmd, **weston_kw)
 
     if not backend_wayland._wait_for_wayland_server(
-        socket=weston_socket, timeout=5.0,
+        socket=weston_socket, timeout=_TIMEOUT_LOCAL_PROC,
     ):
         proc.send_signal(signal.SIGINT)
         proc.communicate()
@@ -173,7 +179,7 @@ def _stop_headless_display(proc: "subprocess.Popen[bytes]") -> None:
     Stop the headless Wayland display server started by ``_start_headless_display``.
     """
     proc.send_signal(signal.SIGINT)
-    proc.communicate(timeout=10)
+    proc.communicate(timeout=_TIMEOUT_LOCAL_PROC)
     ini_path = getattr(proc, "_weston_ini_path", None)
     if ini_path is not None and os.path.exists(ini_path):
         os.remove(ini_path)
@@ -338,7 +344,7 @@ class _TestServerMixin:
         Terminate Blender and close its stdout pipe.
         """
         cls._blender_proc.terminate()
-        cls._blender_proc.wait(timeout=10)
+        cls._blender_proc.wait(timeout=_TIMEOUT_LOCAL_PROC)
         if cls._blender_proc.stdout is not None:
             cls._blender_proc.stdout.close()
 

@@ -52,6 +52,10 @@ Environment Variables
    BLENDER_MCP_HOST    Host the MCP addon listens on (default: localhost).
    BLENDER_MCP_PORT    Port the MCP addon listens on (default: 9876).
    BLENDER_MCP_TIMEOUT Startup timeout in seconds for tests (default: 10).
+   GLOBAL_TIMEOUT_SCALE
+                       Multiply all test timeouts by this factor
+                       (default: 1). Useful on slower systems or
+                       with slower models.
    BLENDER_MCP_FOREGROUND
                        When set, run Blender in the foreground during tests.
    ANTHROPIC_API_KEY   API key for Claude integration tests.

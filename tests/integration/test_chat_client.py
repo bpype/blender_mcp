@@ -48,9 +48,21 @@ _PORT_BLENDER = 9879
 _PORT_MOCK_LLM = 9880
 _PORT_LLAMA_SERVER = 9881
 
+# Scale all timeouts (e.g. `GLOBAL_TIMEOUT_SCALE=2` doubles every limit).
+_TIMEOUT_SCALE = float(os.environ.get("GLOBAL_TIMEOUT_SCALE", "1"))
+
 # Maximum time to wait for servers to start (seconds).
 # For llama-server, loading large models can take a while.
-_TIMEOUT_STARTUP = 60
+_TIMEOUT_STARTUP = int(60 * _TIMEOUT_SCALE)
+
+# Maximum time to wait for a local process to respond or exit (seconds).
+_TIMEOUT_LOCAL_PROC = int(10 * _TIMEOUT_SCALE)
+
+# Maximum time for a single HTTP health-check request (seconds).
+_TIMEOUT_HTTP_REQUEST = 2.0 * _TIMEOUT_SCALE
+
+# Maximum time to wait for the chat client to finish (seconds).
+_TIMEOUT_CHAT_CLIENT = int(120 * _TIMEOUT_SCALE)
 
 
 if os.environ.get("USE_LLAMA_CXX"):
@@ -161,7 +173,7 @@ def _start_headless_display(
     )
 
     if not backend_wayland._wait_for_wayland_server(
-        socket=weston_socket, timeout=5.0,
+        socket=weston_socket, timeout=_TIMEOUT_LOCAL_PROC,
     ):
         proc.send_signal(signal.SIGINT)
         proc.communicate()
@@ -177,7 +189,7 @@ def _stop_headless_display(proc: "subprocess.Popen[bytes]", ini_path: str) -> No
     Stop the headless Wayland display server started by ``_start_headless_display``.
     """
     proc.send_signal(signal.SIGINT)
-    proc.communicate(timeout=10)
+    proc.communicate(timeout=_TIMEOUT_LOCAL_PROC)
     if os.path.exists(ini_path):
         os.remove(ini_path)
 
@@ -230,7 +242,7 @@ def _wait_for_health(
                 "llama-server exited with code {:d} before becoming healthy".format(rc)
             )
         try:
-            with urllib.request.urlopen(url, timeout=2) as resp:
+            with urllib.request.urlopen(url, timeout=_TIMEOUT_HTTP_REQUEST) as resp:
                 if resp.status == 200:
                     return
         except urllib.error.HTTPError as ex:
@@ -247,7 +259,7 @@ def _wait_for_health(
 # Blender TCP helpers.
 
 def _blender_exec_for_internal_use_only(
-    port: int, code: str, timeout: float = 10,
+    port: int, code: str, timeout: float = _TIMEOUT_LOCAL_PROC,
 ) -> dict[str, object]:
     """
     Execute *code* in Blender via the addon's TCP socket server.
@@ -270,7 +282,7 @@ def _blender_exec_for_internal_use_only(
 
 
 def _blender_exec_for_internal_use_only_ok_or_exception(
-    port: int, code: str, timeout: float = 10,
+    port: int, code: str, timeout: float = _TIMEOUT_LOCAL_PROC,
 ) -> dict[str, object]:
     """
     Like ``_blender_exec_for_internal_use_only`` but raises ``RuntimeError``
@@ -437,7 +449,7 @@ def _start_llama_server(
 def _stop_llama_server(proc: "subprocess.Popen[bytes]") -> None:
     """Terminate a llama-server process."""
     proc.terminate()
-    proc.wait(timeout=10)
+    proc.wait(timeout=_TIMEOUT_LOCAL_PROC)
     if proc.stdout is not None:
         proc.stdout.close()
 
@@ -651,7 +663,7 @@ class TestChatClient(unittest.TestCase):
         Terminate Blender and close its stdout pipe.
         """
         cls._blender_proc.terminate()
-        cls._blender_proc.wait(timeout=10)
+        cls._blender_proc.wait(timeout=_TIMEOUT_LOCAL_PROC)
         if cls._blender_proc.stdout is not None:
             cls._blender_proc.stdout.close()
 
@@ -670,7 +682,6 @@ class TestChatClient(unittest.TestCase):
         stdout_text, _stderr_text = self._run_chat_client(
             "Describe the default cube",
             ["openai", "--api-url", "http://localhost:{:d}".format(_PORT_MOCK_LLM)],
-            timeout=60,
         )
         self.assertIn("Cube", stdout_text, "Expected 'Cube' in output.\n" + self._last_output_info)
         self.assertIn(
@@ -706,8 +717,6 @@ class TestChatClient(unittest.TestCase):
         stdout_text, _stderr_text = self._run_chat_client(
             "Use get_object_detail_summary to describe the object named 'Cube'.",
             ["openai", "--api-url", "http://localhost:{:d}".format(_PORT_LLAMA_SERVER)],
-            # Running locally can be _very_ slow, allow a long time.
-            timeout=500,
         )
         self.assertIn("Cube", stdout_text, "Expected 'Cube' in output.\n" + self._last_output_info)
         self.assertTrue(
@@ -770,7 +779,7 @@ class TestChatClient(unittest.TestCase):
         return response.get("result", {}).get("value")
 
     def _run_chat_client(
-        self, prompt: str, provider_args: list[str], *, timeout: int = 120,
+        self, prompt: str, provider_args: list[str], *, timeout: int = _TIMEOUT_CHAT_CLIENT,
     ) -> tuple[str, str]:
         """
         Run the chat client with *prompt* and return ``(stdout, stderr)`` text.

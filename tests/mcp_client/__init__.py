@@ -13,13 +13,20 @@ __all__ = (
 )
 
 import json
+import os
 import select
 import subprocess
 import time
 from typing import Any
 
+# Scale all timeouts (e.g. `GLOBAL_TIMEOUT_SCALE=2` doubles every limit).
+_TIMEOUT_SCALE = float(os.environ.get("GLOBAL_TIMEOUT_SCALE", "1"))
+
 # Per-request timeout in seconds.
-_REQUEST_TIMEOUT = 30
+_REQUEST_TIMEOUT = int(30 * _TIMEOUT_SCALE)
+
+# Maximum time to wait for a local process to respond or exit (seconds).
+_TIMEOUT_LOCAL_PROC = int(5 * _TIMEOUT_SCALE)
 
 
 class MCPClient:
@@ -154,10 +161,10 @@ class MCPClient:
             self._proc.stdout.close()
         self._proc.terminate()
         try:
-            self._proc.wait(timeout=5)
+            self._proc.wait(timeout=_TIMEOUT_LOCAL_PROC)
         except subprocess.TimeoutExpired:
             self._proc.kill()
-            self._proc.wait(timeout=5)
+            self._proc.wait(timeout=_TIMEOUT_LOCAL_PROC)
 
     def __enter__(self) -> "MCPClient":
         return self
