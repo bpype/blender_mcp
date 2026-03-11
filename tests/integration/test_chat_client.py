@@ -233,6 +233,8 @@ def _wait_for_health(
             with urllib.request.urlopen(url, timeout=2) as resp:
                 if resp.status == 200:
                     return
+        except urllib.error.HTTPError as ex:
+            ex.close()
         except (urllib.error.URLError, OSError):
             pass
         time.sleep(1)
