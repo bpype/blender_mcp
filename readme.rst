@@ -128,6 +128,9 @@ Tools
 ``get_object_detail_summary``
    Return a structured summary of the object identified by *name*.
 
+``get_objects_summary``
+   Return the scene's collection hierarchy and their objects.
+
 ``get_screenshot_of_window_as_image``
    Take a screenshot of the entire Blender window and return it as a PNG
    image.
