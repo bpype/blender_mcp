@@ -7,7 +7,7 @@ tagline = "MCP server addon for LLM interaction with Blender"
 maintainer = "Blender MCP Contributors"
 type = "add-on"
 
-blender_version_min = "5.0.0"
+blender_version_min = "5.1.0"
 
 license = [
   "SPDX:GPL-3.0-or-later",
