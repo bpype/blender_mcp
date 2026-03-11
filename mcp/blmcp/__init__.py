@@ -10,6 +10,7 @@ __all__ = (
     "main",
 )
 
+import argparse
 import importlib
 import os
 import pkgutil
@@ -17,8 +18,33 @@ import pkgutil
 import yaml
 from mcp.server.fastmcp import FastMCP  # pylint: disable=import-error,no-name-in-module
 
+_USE_HTTP_SUPPORT = True
+
+_TRANSPORTS = ("stdio", *(("http",) if _USE_HTTP_SUPPORT else ()))
+
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description="MCP server for Blender.")
+    parser.add_argument(
+        "--transport", "-t",
+        choices=_TRANSPORTS,
+        default="stdio",
+        help="Transport protocol (default: stdio).",
+    )
+    if _USE_HTTP_SUPPORT:
+        parser.add_argument(
+            "--host",
+            default="127.0.0.1",
+            help="Host to bind to for HTTP transports (default: 127.0.0.1).",
+        )
+        parser.add_argument(
+            "--port", "-p",
+            type=int,
+            default=8000,
+            help="Port to bind to for HTTP transports (default: 8000).",
+        )
+    args = parser.parse_args()
+
     # Load prompts.
     data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
     with open(os.path.join(data_dir, "prompts.yml"), encoding="utf-8") as fh:
@@ -36,5 +62,36 @@ def main() -> int:
         if hasattr(mod, "register"):
             mod.register(mcp)
 
-    mcp.run()
+    transport = args.transport
+    if _USE_HTTP_SUPPORT and transport == "http":
+        from mcp.server.fastmcp.server import TransportSecuritySettings  # pylint: disable=import-error,no-name-in-module
+        from starlette.middleware.cors import CORSMiddleware
+
+        transport = "streamable-http"
+
+        mcp.settings.host = args.host
+        mcp.settings.port = args.port
+        mcp.settings.streamable_http_path = "/"
+        mcp.settings.stateless_http = True
+        mcp.settings.transport_security = TransportSecuritySettings(
+            enable_dns_rebinding_protection=False,
+        )
+
+        # Add CORS middleware so browser-based clients
+        # (e.g. llama.cpp web UI) can connect without preflight failures.
+        _orig = mcp.streamable_http_app
+
+        def _app_with_cors() -> "Starlette":
+            app = _orig()
+            app.add_middleware(
+                CORSMiddleware,
+                allow_origins=["*"],
+                allow_methods=["*"],
+                allow_headers=["*"],
+            )
+            return app
+
+        mcp.streamable_http_app = _app_with_cors
+
+    mcp.run(transport=transport)
     return 0
