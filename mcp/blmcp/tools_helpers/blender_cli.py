@@ -58,7 +58,9 @@ def run_blender_cli(
         "            'The `result` variable must be a dict, not ' +\n"
         "            type(_result).__name__ +\n"
         "            '. Wrap your return value: `result = {{\"key\": value}}`')\n"
-        '    print("{:s}" + json.dumps(_result))\n'
+        # This only executes arbitrary (LLM-generated) code, not regular tools,
+        # so use `default=repr` (equivalent to `strict_json=False`).
+        '    print("{:s}" + json.dumps(_result, default=repr))\n'
         "except Exception as ex:\n"
         '    print("{:s}" + json.dumps(str(ex)))\n'
     ).format(code, _RESULT_PREFIX, _ERROR_PREFIX)
@@ -120,7 +122,8 @@ def synced_blend_for_cli(blend_file: str) -> Generator[str, None, None]:
         try:
             response = send_code(
                 "import bpy, os\n"
-                "result = {\"is_dirty\": bpy.data.is_dirty, \"filepath\": bpy.data.filepath}\n"
+                "result = {\"is_dirty\": bpy.data.is_dirty, \"filepath\": bpy.data.filepath}\n",
+                strict_json=True,
             )
         except ConnectionError:
             # No running Blender instance, use the on-disk file as-is.
@@ -150,7 +153,8 @@ def synced_blend_for_cli(blend_file: str) -> Generator[str, None, None]:
         temp_path = _numbered_blend_path(blend_file)
         save_response = send_code(
             "import bpy\n"
-            "bpy.ops.wm.save_as_mainfile(filepath={!r}, copy=True)\n".format(temp_path)
+            "bpy.ops.wm.save_as_mainfile(filepath={!r}, copy=True)\n".format(temp_path),
+            strict_json=True,
         )
         if save_response.get("status") != "ok":
             raise RuntimeError(str(save_response.get("message", "Unknown error")))

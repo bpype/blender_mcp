@@ -26,7 +26,7 @@ def register(mcp: FastMCP) -> None:
         """
         Simple/fast access to the blend file's path, save status, age, and backups.
         """
-        return send_code(toolcode_format_call(_TOOL_CALL, None))
+        return send_code(toolcode_format_call(_TOOL_CALL, None), strict_json=True)
 
     @mcp.tool()
     def get_blendfile_summary_path_info_for_cli(blend_file: str) -> dict[str, object]:

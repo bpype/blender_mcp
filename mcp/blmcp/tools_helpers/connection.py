@@ -27,7 +27,7 @@ def get_connection_params() -> tuple[str, int]:
     return host, port
 
 
-def send_code(code: str) -> dict[str, object]:
+def send_code(code: str, strict_json: bool) -> dict[str, object]:
     """
     Send Python code to the Blender addon socket server for execution.
 
@@ -39,7 +39,11 @@ def send_code(code: str) -> dict[str, object]:
     Raises ``ConnectionError`` when Blender is unreachable.
     """
     host, port = get_connection_params()
-    request = json.dumps({"type": "execute", "code": code}) + "\0"
+    request = json.dumps({
+        "type": "execute",
+        "code": code,
+        "strict_json": strict_json,
+    }) + "\0"
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.settimeout(_TIMEOUT)

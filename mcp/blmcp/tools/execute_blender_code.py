@@ -22,7 +22,9 @@ def register(mcp: FastMCP) -> None:
         The code runs in Blender's Python environment with full access to ``bpy``.
         To return data, assign a JSON-serialisable dict to a variable named ``result``.
         """
-        return send_code(code)
+        # Not strict: LLM-generated code may return non-JSON-serializable values
+        # (e.g. Blender objects). Use `repr` as a fallback instead of erroring.
+        return send_code(code, strict_json=False)
 
     @mcp.tool()
     def execute_blender_code_for_cli(blend_file: str, code: str) -> dict[str, object]:
@@ -32,6 +34,8 @@ def register(mcp: FastMCP) -> None:
         Opens *blend_file* with ``blender --background`` and runs *code*.
         Assign a dict to ``result`` to return data.
         """
+        # LLM-generated code may return non-JSON-serializable values
+        # (e.g. Blender objects), handled by `run_blender_cli` via `default=repr`.
         with synced_blend_for_cli(blend_file) as synced_path:
             value = run_blender_cli(synced_path, code)
             assert isinstance(value, dict), "Expected dict from `run_blender_cli`, got {!r}".format(type(value))

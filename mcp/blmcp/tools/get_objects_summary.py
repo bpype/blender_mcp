@@ -28,4 +28,4 @@ def register(mcp: FastMCP) -> None:
         Each collection lists its objects (name, type, parent, data name,
         selection, visibility) and nested child collections.
         """
-        return send_code(toolcode_format_call(_TOOL_CALL, None))
+        return send_code(toolcode_format_call(_TOOL_CALL, None), strict_json=True)

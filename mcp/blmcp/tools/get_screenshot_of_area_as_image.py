@@ -33,7 +33,7 @@ def register(mcp: FastMCP) -> None:
         *area_ui_type* matches the area's ``ui_type``.
         """
         p = Params(area_ui_type=area_ui_type)
-        response = send_code(toolcode_format_call(_TOOL_CALL, p))
+        response = send_code(toolcode_format_call(_TOOL_CALL, p), strict_json=True)
         if response.get("status") != "ok":
             raise RuntimeError(str(response.get("message", "Unknown error")))
         result = response["result"]

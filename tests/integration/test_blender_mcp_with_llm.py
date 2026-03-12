@@ -269,7 +269,11 @@ def _blender_exec_for_internal_use_only(
 
     Sends a null-byte-delimited JSON request and returns the parsed response.
     """
-    request = json.dumps({"type": "execute", "code": code}).encode("utf-8") + b"\0"
+    request = json.dumps({
+        "type": "execute",
+        "code": code,
+        "strict_json": True,
+    }).encode("utf-8") + b"\0"
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.settimeout(timeout)
         sock.connect(("localhost", port))

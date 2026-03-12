@@ -179,9 +179,17 @@ def _encode_response(response: dict[str, object]) -> bytes:
     return (json.dumps(response) + "\0").encode("utf-8")
 
 
-def _execute_code(code: str) -> dict[str, object]:
+def _execute_code(code: str, strict_json: bool) -> dict[str, object]:
     """
     Execute *code* and return a response dict.
+
+    :param strict_json: When true, the response *must* be serializable.
+        Should always be true, when executing Python code we have full-control over,
+        because any non-serializable data is effectively a bug.
+
+        Only allow it to be false when executing arbitrary LLM generated code,
+        in this case it's not worth the overhead of correcting the LLM mistake,
+        just ``__repr__`` the value so it can fumble its way forward.
     """
     from .capture_output import CaptureOutput
     from .weak_sandbox import WeakSandboxForLLM
@@ -208,7 +216,24 @@ def _execute_code(code: str) -> dict[str, object]:
             ).format(type(result).__name__),
         }
     else:
-        response = {"status": "ok", "result": result}
+        # Guard against LLM-generated code storing non-serializable values
+        # such as Blender objects, e.g. `result = {"obj": bpy.context.active_object}`.
+        # Without this, `json.dumps` fails inside `_encode_response`.
+        if strict_json:
+            try:
+                json.dumps(result)
+            except (TypeError, ValueError) as ex:
+                response = {
+                    "status": "error",
+                    "message": "The `result` value is not JSON-serializable: {:s}".format(str(ex)),
+                }
+            else:
+                response = {"status": "ok", "result": result}
+        else:
+            # Use `repr` as a fallback so non-serializable objects
+            # (e.g. Blender ID types) appear as their string representation.
+            result = json.loads(json.dumps(result, default=repr))
+            response = {"status": "ok", "result": result}
     if captured.stdout:
         response["stdout"] = captured.stdout
     if captured.stderr:
@@ -227,9 +252,10 @@ def _handle_request(data: bytes) -> dict[str, object]:
             "message": "Unknown request type: {!r}".format(request.get("type")),
         }
     code = request.get("code", "")
+    strict_json = request["strict_json"]
     if use_log:
         print("request:\n{:s}".format(code), file=sys.stderr)
-    response = _execute_code(code)
+    response = _execute_code(code, strict_json=strict_json)
     if use_log:
         print("response: {:s}".format(json.dumps(response, indent=2)), file=sys.stderr)
     return response

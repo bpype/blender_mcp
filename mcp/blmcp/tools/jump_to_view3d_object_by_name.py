@@ -34,4 +34,4 @@ def register(mcp: FastMCP) -> None:
         """
         p = Params(name=name, allow_edits=allow_edits)
         code = toolcode_format_call(_TOOL_CALL, p)
-        return send_code(code)
+        return send_code(code, strict_json=True)

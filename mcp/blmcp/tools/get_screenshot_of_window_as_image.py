@@ -27,7 +27,7 @@ def register(mcp: FastMCP) -> None:
         """
         Take a screenshot of the entire Blender window and return it as a PNG image.
         """
-        response = send_code(toolcode_format_call(_TOOL_CALL, None))
+        response = send_code(toolcode_format_call(_TOOL_CALL, None), strict_json=True)
         if response.get("status") != "ok":
             raise RuntimeError(str(response.get("message", "Unknown error")))
         result = response["result"]

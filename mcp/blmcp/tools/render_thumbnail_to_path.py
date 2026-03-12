@@ -28,4 +28,4 @@ def register(mcp: FastMCP) -> None:
         """
         p = Params(output_path=output_path)
         code = toolcode_format_call(_TOOL_CALL, p)
-        return send_code(code)
+        return send_code(code, strict_json=True)

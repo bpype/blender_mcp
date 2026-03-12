@@ -25,4 +25,4 @@ def register(mcp: FastMCP) -> None:
         """
         Return a JSON description of the Blender window layout, areas, active object, and selection.
         """
-        return send_code(toolcode_format_call(_TOOL_CALL, None))
+        return send_code(toolcode_format_call(_TOOL_CALL, None), strict_json=True)
