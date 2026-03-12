@@ -16,6 +16,7 @@ from blmcp.tools_helpers import (
     toolcode_wrap_with_calling_convention,
 )
 from blmcp.tools_helpers.connection import send_code
+from blmcp.tools.get_screenshot_of_area_as_image_toolcode import AreaUIType, Params
 from mcp.server.fastmcp import FastMCP, Image  # pylint: disable=import-error,no-name-in-module
 
 _TOOL_CALL = toolcode_wrap_with_calling_convention(toolcode_load_from_filepath(__file__))
@@ -23,11 +24,16 @@ _TOOL_CALL = toolcode_wrap_with_calling_convention(toolcode_load_from_filepath(_
 
 def register(mcp: FastMCP) -> None:
     @mcp.tool()
-    def get_screenshot_of_window_as_image() -> Image:
+    def get_screenshot_of_area_as_image(
+        area_ui_type: AreaUIType,
+    ) -> Image:
         """
-        Take a screenshot of the entire Blender window and return it as a PNG image.
+        Take a screenshot of a single Blender area and return it as a PNG image.
+
+        *area_ui_type* matches the area's ``ui_type``.
         """
-        response = send_code(toolcode_format_call(_TOOL_CALL, None))
+        p = Params(area_ui_type=area_ui_type)
+        response = send_code(toolcode_format_call(_TOOL_CALL, p))
         if response.get("status") != "ok":
             raise RuntimeError(str(response.get("message", "Unknown error")))
         result = response["result"]

@@ -21,372 +21,430 @@ _REPO_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Complete expected tool listing.
 # When a tool is added, changed, or removed this must be updated.
+# Run with `--update` to regenerate from a live server query.
+
+# BEGIN: EXPECTED_TOOLS
 EXPECTED_TOOLS = [
     {
         "name": "execute_blender_code",
-        "description": (
-            "\nExecute Python code in the connected Blender instance.\n\n"
-            "The code runs in Blender's Python environment with full access to ``bpy``.\n"
-            "To return data, assign a JSON-serialisable dict to a variable named ``result``.\n"
-        ),
+        "description": "\n"
+        "Execute Python code in the connected Blender instance.\n"
+        "\n"
+        "The code runs in Blender's Python environment with full access to ``bpy``.\n"
+        "To return data, assign a JSON-serialisable dict to a variable named ``result``.\n",
         "inputSchema": {
             "properties": {
                 "code": {
                     "title": "Code",
-                    "type": "string",
-                },
+                    "type": "string"
+                }
             },
-            "required": ["code"],
+            "required": [
+                "code"
+            ],
             "title": "execute_blender_codeArguments",
-            "type": "object",
-        },
+            "type": "object"
+        }
     },
     {
         "name": "execute_blender_code_for_cli",
-        "description": (
-            "\nExecute Python code in a background Blender process.\n\n"
-            "Opens *blend_file* with ``blender --background`` and runs *code*.\n"
-            "Assign a dict to ``result`` to return data.\n"
-        ),
+        "description": "\n"
+        "Execute Python code in a background Blender process.\n"
+        "\n"
+        "Opens *blend_file* with ``blender --background`` and runs *code*.\n"
+        "Assign a dict to ``result`` to return data.\n",
         "inputSchema": {
             "properties": {
                 "blend_file": {
                     "title": "Blend File",
-                    "type": "string",
+                    "type": "string"
                 },
                 "code": {
                     "title": "Code",
-                    "type": "string",
-                },
+                    "type": "string"
+                }
             },
-            "required": ["blend_file", "code"],
+            "required": [
+                "blend_file",
+                "code"
+            ],
             "title": "execute_blender_code_for_cliArguments",
-            "type": "object",
-        },
+            "type": "object"
+        }
     },
     {
         "name": "get_blendfile_summary_datablocks",
-        "description": (
-            "\nReturn a summary of the blend file: data-block counts, "
-            "active workspace, and render engine.\n"
-        ),
+        "description": "\n"
+        "Return a summary of the blend file: data-block counts, active workspace, and render engine.\n",
         "inputSchema": {
             "properties": {},
             "title": "get_blendfile_summary_datablocksArguments",
-            "type": "object",
-        },
+            "type": "object"
+        }
     },
     {
         "name": "get_blendfile_summary_datablocks_for_cli",
-        "description": (
-            "\nReturn a data-block summary by opening *blend_file* in background Blender.\n"
-        ),
+        "description": "\n"
+        "Return a data-block summary by opening *blend_file* in background Blender.\n",
         "inputSchema": {
             "properties": {
                 "blend_file": {
                     "title": "Blend File",
-                    "type": "string",
-                },
+                    "type": "string"
+                }
             },
-            "required": ["blend_file"],
+            "required": [
+                "blend_file"
+            ],
             "title": "get_blendfile_summary_datablocks_for_cliArguments",
-            "type": "object",
-        },
+            "type": "object"
+        }
     },
     {
         "name": "get_blendfile_summary_missing_files",
-        "description": (
-            "\nReport external file references that are missing from disk\n"
-            "(images, libraries, fonts, sounds, movie clips, caches, sequences).\n"
-        ),
+        "description": "\n"
+        "Report external file references that are missing from disk\n"
+        "(images, libraries, fonts, sounds, movie clips, caches, sequences).\n",
         "inputSchema": {
             "properties": {},
             "title": "get_blendfile_summary_missing_filesArguments",
-            "type": "object",
-        },
+            "type": "object"
+        }
     },
     {
         "name": "get_blendfile_summary_missing_files_for_cli",
-        "description": (
-            "\nReport missing file references by opening *blend_file* in background Blender.\n"
-        ),
+        "description": "\n"
+        "Report missing file references by opening *blend_file* in background Blender.\n",
         "inputSchema": {
             "properties": {
                 "blend_file": {
                     "title": "Blend File",
-                    "type": "string",
-                },
+                    "type": "string"
+                }
             },
-            "required": ["blend_file"],
+            "required": [
+                "blend_file"
+            ],
             "title": "get_blendfile_summary_missing_files_for_cliArguments",
-            "type": "object",
-        },
+            "type": "object"
+        }
     },
     {
         "name": "get_blendfile_summary_of_linked_libraries",
-        "description": (
-            "\nReturn a tree of directly and indirectly linked library files.\n"
-        ),
+        "description": "\n"
+        "Return a tree of directly and indirectly linked library files.\n",
         "inputSchema": {
             "properties": {},
             "title": "get_blendfile_summary_of_linked_librariesArguments",
-            "type": "object",
-        },
+            "type": "object"
+        }
     },
     {
         "name": "get_blendfile_summary_of_linked_libraries_for_cli",
-        "description": (
-            "\nReturn linked-library info by opening *blend_file* in background Blender.\n"
-        ),
+        "description": "\n"
+        "Return linked-library info by opening *blend_file* in background Blender.\n",
         "inputSchema": {
             "properties": {
                 "blend_file": {
                     "title": "Blend File",
-                    "type": "string",
-                },
+                    "type": "string"
+                }
             },
-            "required": ["blend_file"],
+            "required": [
+                "blend_file"
+            ],
             "title": "get_blendfile_summary_of_linked_libraries_for_cliArguments",
-            "type": "object",
-        },
+            "type": "object"
+        }
     },
     {
         "name": "get_blendfile_summary_path_info",
-        "description": (
-            "\nSimple/fast access to the blend file's path, save status, age, and backups.\n"
-        ),
+        "description": "\n"
+        "Simple/fast access to the blend file's path, save status, age, and backups.\n",
         "inputSchema": {
             "properties": {},
             "title": "get_blendfile_summary_path_infoArguments",
-            "type": "object",
-        },
+            "type": "object"
+        }
     },
     {
         "name": "get_blendfile_summary_path_info_for_cli",
-        "description": (
-            "\nReturn path info by opening *blend_file* in background Blender.\n"
-        ),
+        "description": "\n"
+        "Return path info by opening *blend_file* in background Blender.\n",
         "inputSchema": {
             "properties": {
                 "blend_file": {
                     "title": "Blend File",
-                    "type": "string",
-                },
+                    "type": "string"
+                }
             },
-            "required": ["blend_file"],
+            "required": [
+                "blend_file"
+            ],
             "title": "get_blendfile_summary_path_info_for_cliArguments",
-            "type": "object",
-        },
+            "type": "object"
+        }
     },
     {
         "name": "get_blendfile_summary_usage_guess",
-        "description": (
-            "\nGuess the primary use-cases of the current blend file "
-            "(scored 0-100 with certainty).\n"
-        ),
+        "description": "\n"
+        "Guess the primary use-cases of the current blend file (scored 0-100 with certainty).\n",
         "inputSchema": {
             "properties": {},
             "title": "get_blendfile_summary_usage_guessArguments",
-            "type": "object",
-        },
+            "type": "object"
+        }
     },
     {
         "name": "get_blendfile_summary_usage_guess_for_cli",
-        "description": (
-            "\nGuess use-cases by opening *blend_file* in background Blender.\n"
-        ),
+        "description": "\n"
+        "Guess use-cases by opening *blend_file* in background Blender.\n",
         "inputSchema": {
             "properties": {
                 "blend_file": {
                     "title": "Blend File",
-                    "type": "string",
-                },
+                    "type": "string"
+                }
             },
-            "required": ["blend_file"],
+            "required": [
+                "blend_file"
+            ],
             "title": "get_blendfile_summary_usage_guess_for_cliArguments",
-            "type": "object",
-        },
+            "type": "object"
+        }
     },
     {
         "name": "get_object_detail_summary",
-        "description": (
-            "\nReturn a structured summary of the object identified by *name*.\n\n"
-            "Includes type, transforms, parent, children, modifiers, constraints,\n"
-            "materials, visibility, data-block name, and collections.\n"
-        ),
+        "description": "\n"
+        "Return a structured summary of the object identified by *name*.\n"
+        "\n"
+        "Includes type, transforms, parent, children, modifiers, constraints,\n"
+        "materials, visibility, data-block name, and collections.\n",
         "inputSchema": {
             "properties": {
                 "name": {
                     "title": "Name",
-                    "type": "string",
-                },
+                    "type": "string"
+                }
             },
-            "required": ["name"],
+            "required": [
+                "name"
+            ],
             "title": "get_object_detail_summaryArguments",
-            "type": "object",
-        },
+            "type": "object"
+        }
     },
     {
         "name": "get_objects_summary",
-        "description": (
-            "\nReturn the scene's collection hierarchy and their objects.\n\n"
-            "Each collection lists its objects (name, type, parent, data name,\n"
-            "selection, visibility) and nested child collections.\n"
-        ),
+        "description": "\n"
+        "Return the scene's collection hierarchy and their objects.\n"
+        "\n"
+        "Each collection lists its objects (name, type, parent, data name,\n"
+        "selection, visibility) and nested child collections.\n",
         "inputSchema": {
             "properties": {},
             "title": "get_objects_summaryArguments",
-            "type": "object",
-        },
+            "type": "object"
+        }
+    },
+    {
+        "name": "get_screenshot_of_area_as_image",
+        "description": "\n"
+        "Take a screenshot of a single Blender area and return it as a PNG image.\n"
+        "\n"
+        "*area_ui_type* matches the area's ``ui_type``.\n",
+        "inputSchema": {
+            "properties": {
+                "area_ui_type": {
+                    "enum": [
+                        "VIEW_3D",
+                        "IMAGE_EDITOR",
+                        "UV",
+                        "ShaderNodeTree",
+                        "CompositorNodeTree",
+                        "GeometryNodeTree",
+                        "TextureNodeTree",
+                        "SEQUENCE_EDITOR",
+                        "CLIP_EDITOR",
+                        "DOPESHEET_EDITOR",
+                        "GRAPH_EDITOR",
+                        "NLA_EDITOR",
+                        "TEXT_EDITOR",
+                        "CONSOLE",
+                        "INFO",
+                        "TOPBAR",
+                        "STATUSBAR",
+                        "OUTLINER",
+                        "PROPERTIES",
+                        "FILE_BROWSER",
+                        "SPREADSHEET",
+                        "PREFERENCES"
+                    ],
+                    "title": "Area Ui Type",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "area_ui_type"
+            ],
+            "title": "get_screenshot_of_area_as_imageArguments",
+            "type": "object"
+        }
     },
     {
         "name": "get_screenshot_of_window_as_image",
-        "description": (
-            "\nTake a screenshot of the entire Blender window and return it as a PNG image.\n"
-        ),
+        "description": "\n"
+        "Take a screenshot of the entire Blender window and return it as a PNG image.\n",
         "inputSchema": {
             "properties": {},
             "title": "get_screenshot_of_window_as_imageArguments",
-            "type": "object",
-        },
+            "type": "object"
+        }
     },
     {
         "name": "get_screenshot_of_window_as_json",
-        "description": (
-            "\nReturn a JSON description of the Blender window layout, "
-            "areas, active object, and selection.\n"
-        ),
+        "description": "\n"
+        "Return a JSON description of the Blender window layout, areas, active object, and selection.\n",
         "inputSchema": {
             "properties": {},
             "title": "get_screenshot_of_window_as_jsonArguments",
-            "type": "object",
-        },
+            "type": "object"
+        }
     },
     {
         "name": "jump_to_tab_by_name",
-        "description": (
-            "\nSwitch the active workspace tab to *name*.\n"
-        ),
+        "description": "\n"
+        "Switch the active workspace tab to *name*.\n",
         "inputSchema": {
             "properties": {
                 "name": {
                     "title": "Name",
-                    "type": "string",
-                },
+                    "type": "string"
+                }
             },
-            "required": ["name"],
+            "required": [
+                "name"
+            ],
             "title": "jump_to_tab_by_nameArguments",
-            "type": "object",
-        },
+            "type": "object"
+        }
     },
     {
         "name": "jump_to_tab_by_space_type",
-        "description": (
-            "\nSwitch to a workspace whose main area matches *space_type*.\n\n"
-            "If *allow_edits* is True and no matching workspace exists, a new one\n"
-            "is created by duplicating the current workspace.\n"
-        ),
+        "description": "\n"
+        "Switch to a workspace whose main area matches *space_type*.\n"
+        "\n"
+        "If *allow_edits* is True and no matching workspace exists, a new one\n"
+        "is created by duplicating the current workspace.\n",
         "inputSchema": {
             "properties": {
+                "space_type": {
+                    "title": "Space Type",
+                    "type": "string"
+                },
                 "allow_edits": {
                     "default": False,
                     "title": "Allow Edits",
-                    "type": "boolean",
-                },
-                "space_type": {
-                    "title": "Space Type",
-                    "type": "string",
-                },
+                    "type": "boolean"
+                }
             },
-            "required": ["space_type"],
+            "required": [
+                "space_type"
+            ],
             "title": "jump_to_tab_by_space_typeArguments",
-            "type": "object",
-        },
+            "type": "object"
+        }
     },
     {
         "name": "jump_to_view3d_object_by_name",
-        "description": (
-            "\nMove the 3D viewport to focus on an object by *name*.\n\n"
-            "If *allow_edits* is True the object may be un-hidden and its\n"
-            "collections enabled to make it visible.\n"
-        ),
+        "description": "\n"
+        "Move the 3D viewport to focus on an object by *name*.\n"
+        "\n"
+        "If *allow_edits* is True the object may be un-hidden and its\n"
+        "collections enabled to make it visible.\n",
         "inputSchema": {
             "properties": {
+                "name": {
+                    "title": "Name",
+                    "type": "string"
+                },
                 "allow_edits": {
                     "default": False,
                     "title": "Allow Edits",
-                    "type": "boolean",
-                },
-                "name": {
-                    "title": "Name",
-                    "type": "string",
-                },
+                    "type": "boolean"
+                }
             },
-            "required": ["name"],
+            "required": [
+                "name"
+            ],
             "title": "jump_to_view3d_object_by_nameArguments",
-            "type": "object",
-        },
+            "type": "object"
+        }
     },
     {
         "name": "jump_to_view3d_object_data_by_name",
-        "description": (
-            "\nMove the 3D viewport to the object whose data block matches *name*.\n\n"
-            "If *allow_edits* is True the object may be un-hidden and its\n"
-            "collections enabled to make it visible.\n"
-        ),
+        "description": "\n"
+        "Move the 3D viewport to the object whose data block matches *name*.\n"
+        "\n"
+        "If *allow_edits* is True the object may be un-hidden and its\n"
+        "collections enabled to make it visible.\n",
         "inputSchema": {
             "properties": {
+                "name": {
+                    "title": "Name",
+                    "type": "string"
+                },
                 "allow_edits": {
                     "default": False,
                     "title": "Allow Edits",
-                    "type": "boolean",
-                },
-                "name": {
-                    "title": "Name",
-                    "type": "string",
-                },
+                    "type": "boolean"
+                }
             },
-            "required": ["name"],
+            "required": [
+                "name"
+            ],
             "title": "jump_to_view3d_object_data_by_nameArguments",
-            "type": "object",
-        },
+            "type": "object"
+        }
     },
     {
         "name": "render_thumbnail_to_path",
-        "description": (
-            "\nRender a small, low-quality thumbnail to *output_path* "
-            "(temporarily overrides settings).\n"
-        ),
+        "description": "\n"
+        "Render a small, low-quality thumbnail to *output_path* (temporarily overrides settings).\n",
         "inputSchema": {
             "properties": {
                 "output_path": {
                     "title": "Output Path",
-                    "type": "string",
-                },
+                    "type": "string"
+                }
             },
-            "required": ["output_path"],
+            "required": [
+                "output_path"
+            ],
             "title": "render_thumbnail_to_pathArguments",
-            "type": "object",
-        },
+            "type": "object"
+        }
     },
     {
         "name": "render_viewport_to_path",
-        "description": (
-            "\nRender the current scene to *output_path* using current render settings.\n"
-        ),
+        "description": "\n"
+        "Render the current scene to *output_path* using current render settings.\n",
         "inputSchema": {
             "properties": {
                 "output_path": {
                     "title": "Output Path",
-                    "type": "string",
-                },
+                    "type": "string"
+                }
             },
-            "required": ["output_path"],
+            "required": [
+                "output_path"
+            ],
             "title": "render_viewport_to_pathArguments",
-            "type": "object",
-        },
-    },
+            "type": "object"
+        }
+    }
 ]
+# END: EXPECTED_TOOLS
 
 
 def _list_tools() -> list[dict[str, object]]:
@@ -428,5 +486,32 @@ class TestToolListing(unittest.TestCase):
         self.assertEqual(self._tools, EXPECTED_TOOLS)
 
 
+def _update_expected_tools() -> None:
+    """
+    Re-generate the EXPECTED_TOOLS block in this file from a live server query.
+    With out this updating the test is tedious!
+    """
+    import json
+    import subprocess
+    filepath = os.path.abspath(__file__)
+    with open(filepath, "r", encoding="utf-8") as fh:
+        source = fh.read()
+    begin = source.index("# BEGIN: EXPECTED_TOOLS\n") + len("# BEGIN: EXPECTED_TOOLS\n")
+    end = source.index("# END: EXPECTED_TOOLS\n")
+    formatted = json.dumps(_list_tools(), indent=4)
+    formatted = formatted.replace(": true", ": True").replace(": false", ": False").replace(": null", ": None")
+    formatted = formatted.replace("\\n", "\\n\"\n\"")
+    # Also handles the `\n"` case (no trailing empty string).
+    formatted = formatted.replace("\\n\"\n\"\"", "\\n\"")
+    formatted = "EXPECTED_TOOLS = " + formatted + "\n"
+    with open(filepath, "w", encoding="utf-8") as fh:
+        fh.write(source[:begin] + formatted + source[end:])
+    subprocess.check_call(["autopep8", "--in-place", filepath])
+
+
 if __name__ == "__main__":
-    unittest.main()
+    if "--update" in sys.argv:
+        sys.argv.remove("--update")
+        _update_expected_tools()
+    else:
+        unittest.main()

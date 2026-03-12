@@ -15,6 +15,7 @@ display instead.
 
 __all__ = ()
 
+import base64
 import glob
 import json
 import os
@@ -22,6 +23,7 @@ import shlex
 import shutil
 import signal
 import socket
+import struct
 import subprocess
 import tempfile
 import threading
@@ -463,10 +465,57 @@ class _TestServerMixin:
             self.assertIn("score", scores)
             self.assertIn("certainty", scores)
 
+    def _call_tool_screenshot(
+        self,
+        name: str,
+        arguments: dict[str, object] | None = None,
+    ) -> list[dict[str, object]]:
+        _tested_tools.add(name)
+        result = self._client.call_tool(name, arguments)
+        content = result.get("content", [])
+        if not self._interactive:
+            # Non-interactive modes (--background and --command) have
+            # bpy.app.background == True, so screenshots are unavailable.
+            self.assertTrue(
+                result.get("isError", False),
+                "Expected {:s} to fail in non-interactive mode".format(name),
+            )
+        else:
+            self.assertFalse(
+                result.get("isError", False),
+                "Tool {:s} returned an error: {!r}".format(name, content),
+            )
+            self.assertEqual(content[0].get("type"), "image")
+            image_data = content[0].get("data", "")
+            self.assertTrue(len(image_data) > 0)
+            width, height = self._image_size(image_data)
+            self.assertGreater(width, 1)
+            self.assertLess(width, 4096)
+            self.assertGreater(height, 1)
+            self.assertLess(height, 4096)
+        return content
+
+    @staticmethod
+    def _image_size(image_base64: str) -> tuple[int, int]:
+        """Return (width, height) of a base64-encoded PNG by reading the IHDR chunk."""
+        data = base64.b64decode(image_base64)
+        if data[:8] != b"\x89PNG\r\n\x1a\n":
+            return (-1, -1)
+        width, height = struct.unpack(">II", data[16:24])
+        return (width, height)
+
+    def test_get_screenshot_of_area_as_image(self) -> None:
+        self._call_tool_screenshot("get_screenshot_of_area_as_image", {
+            "area_ui_type": "VIEW_3D",
+        })
+
+    def test_get_screenshot_of_area_as_image_error(self) -> None:
+        self._call_tool_expect_error("get_screenshot_of_area_as_image", {
+            "area_ui_type": "NONEXISTENT",
+        })
+
     def test_get_screenshot_of_window_as_image(self) -> None:
-        content = self._call_tool("get_screenshot_of_window_as_image")
-        self.assertEqual(content[0].get("type"), "image")
-        self.assertTrue(len(content[0].get("data", "")) > 0)
+        self._call_tool_screenshot("get_screenshot_of_window_as_image")
 
     def test_get_screenshot_of_window_as_json(self) -> None:
         data = self._test_tool("get_screenshot_of_window_as_json")

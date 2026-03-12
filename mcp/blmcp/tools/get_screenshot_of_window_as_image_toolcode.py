@@ -26,27 +26,24 @@ class Result(NamedTuple):
 def main(params: None) -> Result:
     del params
     import bpy  # pylint: disable=import-error,no-name-in-module
+    from bpy import context  # pylint: disable=import-error,no-name-in-module
 
-    # Capture the full window via the first available area.
-    window = bpy.context.window
-    screen = window.screen
-    if not screen.areas:
-        return Result(status="error", message="No areas found in the current screen")
-    area = screen.areas[0]
-    if not area.regions:
-        return Result(status="error", message="No regions found in the first area")
-    region = area.regions[0]
+    if bpy.app.background:
+        return Result(status="error", message="Screenshots are not available in background mode")
+
+    window = context.window
+    if window is None:
+        return Result(status="error", message="No active window")
 
     # Use a unique temp file to avoid collisions if multiple
     # requests run concurrently.
     fd, filepath = tempfile.mkstemp(suffix=".png", prefix="blmcp_screenshot_")
     os.close(fd)
     try:
-        with bpy.context.temp_override(window=window, area=area, region=region):
-            try:
-                bpy.ops.screen.screenshot_area(filepath=filepath)
-            except RuntimeError as ex:
-                return Result(status="error", message=str(ex))
+        try:
+            bpy.ops.screen.screenshot(filepath=filepath)
+        except RuntimeError as ex:
+            return Result(status="error", message=str(ex))
 
         with open(filepath, "rb") as fh:
             data = base64.b64encode(fh.read()).decode("ascii")
