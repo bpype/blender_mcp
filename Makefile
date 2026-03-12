@@ -64,8 +64,9 @@ Environment Variables
    USE_LLAMA_CXX       When set, run LLM tests using llama-server.
                        Cannot be combined with USE_ANTHROPIC.
                        Requires LLAMA_SERVER_BIN and
-                       LLAMA_SERVER_ARGS. Note: many tests may
-                       fail depending on the model's capability.
+                       LLAMA_SERVER_ARGS.
+                       Note: many tests may fail depending on the
+                       capability of the model.
    LLAMA_SERVER_BIN    Path to the llama-server binary.
    LLAMA_SERVER_ARGS   Extra arguments for llama-server
                        (e.g. --jinja -m model.gguf).
@@ -96,7 +97,7 @@ else
 endif
 
 format:
-	autopep8 --in-place --recursive mcp/ addon/
+	autopep8 --in-place --recursive mcp/ addon/ scripts/ tests/ chat_client/
 
 check_license:
 	@$(PYTHON) _misc/check_license.py
