@@ -33,7 +33,7 @@ def main(params: Params) -> Result:
     if ws is None:
         return Result(
             status="error",
-            message="Workspace '{:s}' not found".format(params.name),
+            message="Workspace {!r} not found".format(params.name),
             available_workspaces=[w.name for w in bpy.data.workspaces],
         )
 

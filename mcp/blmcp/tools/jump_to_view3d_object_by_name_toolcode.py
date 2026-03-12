@@ -33,7 +33,7 @@ def main(params: Params) -> Result:
 
     obj = bpy.data.objects.get(params.name)
     if obj is None:
-        return Result(status="error", message="Object '{:s}' not found".format(params.name))
+        return Result(status="error", message="Object {!r} not found".format(params.name))
 
     if params.allow_edits:
         if obj.hide_viewport:

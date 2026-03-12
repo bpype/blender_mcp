@@ -75,6 +75,6 @@ def main(params: Params) -> Result:
     })
     return Result(
         status="error",
-        message="No workspace with space type '{:s}' found".format(params.space_type),
+        message="No workspace with space type {!r} found".format(params.space_type),
         available_space_types=available,
     )

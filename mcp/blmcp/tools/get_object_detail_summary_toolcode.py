@@ -46,7 +46,7 @@ def main(params: Params) -> Result:
         available = sorted(bpy.data.objects.keys())
         return Result(
             status="error",
-            message="Object '{:s}' not found. Available objects: {:s}".format(
+            message="Object {!r} not found. Available objects: {:s}".format(
                 params.name, ", ".join(available) if available else "(none)",
             ),
         )

@@ -40,7 +40,7 @@ def main(params: Params) -> Result:
     if target is None:
         return Result(
             status="error",
-            message="No object found with data named '{:s}'".format(params.name),
+            message="No object found with data named {!r}".format(params.name),
         )
 
     if params.allow_edits:
