@@ -16,7 +16,7 @@ Targets
 
      List all tests:    make test_integration TESTS_LIST=1
      Run tests:         make test_integration TESTS=TestChatClient.test_name
-     Multiple tests:    make test_integration TESTS=test_one:test_two
+     Multiple tests:    make test_integration TESTS="test_one test_two"
    * format:            Auto-format Python sources with autopep8.
    * readme_update:     Regenerate the tools listing in readme.rst.
 
@@ -93,7 +93,7 @@ ifdef TESTS_LIST
 	from tests.integration.test_blender_mcp_with_llm import TestChatClient; \
 	[print(t.id().rsplit('.', 1)[-2].split('.')[-1] + '.' + t.id().rsplit('.', 1)[-1]) for t in unittest.TestLoader().loadTestsFromTestCase(TestChatClient)]"
 else
-	$(PYTHON) tests/integration/test_blender_mcp_with_llm.py -v $$(echo '$(TESTS)' | tr ':' ' ')
+	$(PYTHON) tests/integration/test_blender_mcp_with_llm.py -v $(TESTS)
 endif
 
 format:
