@@ -64,7 +64,9 @@ def main() -> int:
 
     transport = args.transport
     if _USE_HTTP_SUPPORT and transport == "http":
-        from mcp.server.fastmcp.server import TransportSecuritySettings  # pylint: disable=import-error,no-name-in-module
+        # pylint: disable-next=import-error,no-name-in-module
+        from mcp.server.fastmcp.server import TransportSecuritySettings  # type: ignore[attr-defined]
+        from starlette.applications import Starlette
         from starlette.middleware.cors import CORSMiddleware
 
         transport = "streamable-http"
@@ -81,7 +83,7 @@ def main() -> int:
         # (e.g. llama.cpp web UI) can connect without preflight failures.
         _orig = mcp.streamable_http_app
 
-        def _app_with_cors() -> "Starlette":
+        def _app_with_cors() -> Starlette:
             app = _orig()
             app.add_middleware(
                 CORSMiddleware,
@@ -91,7 +93,7 @@ def main() -> int:
             )
             return app
 
-        mcp.streamable_http_app = _app_with_cors
+        mcp.streamable_http_app = _app_with_cors  # type: ignore[method-assign]
 
     mcp.run(transport=transport)
     return 0
