@@ -6,7 +6,7 @@ Prerequisites
 =============
 
 - This repository.
-- `LLAMA.cpp <https://github.com/ggml-org/llama.cpp>`__.
+- `LLAMA.cpp <https://github.com/ggml-org/llama.cpp>`__ (version 8218 or newer).
 - Blender 5.1.
 
 
