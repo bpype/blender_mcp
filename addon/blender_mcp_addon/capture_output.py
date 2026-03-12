@@ -67,6 +67,7 @@ class CaptureOutput:
         exc_val: BaseException | None,
         exc_tb: object,
     ) -> None:
+        del exc_type, exc_val, exc_tb
         sys.stdout = self._original_out
         sys.stderr = self._original_err
 

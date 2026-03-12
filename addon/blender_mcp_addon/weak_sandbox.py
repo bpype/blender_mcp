@@ -147,5 +147,6 @@ class WeakSandboxForLLM:
         exc_val: BaseException | None,
         exc_tb: object,
     ) -> None:
+        del exc_type, exc_val, exc_tb
         self.ops_blocked_restore(self._store_ops)
         self.override_restore(self._store_attrs)
