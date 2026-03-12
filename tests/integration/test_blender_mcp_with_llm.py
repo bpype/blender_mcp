@@ -5,15 +5,18 @@
 """
 End-to-end integration test for the chat client pipeline.
 
-Verifies: user input -> chat client -> LLM (mocked) -> MCP server -> Blender addon -> Blender.
+Verifies: user input -> chat client -> LLM -> MCP server -> Blender addon -> Blender.
 
-A mock HTTP server replaces llama-server so no real LLM or model file is needed.
+The LLM may be from:
+- ``USE_ANTHROPIC``: you must have an API key.
+- ``USE_LLAMA_CXX``: you must setup a local modal and have LLAMA.C++ installed.
+
 ``BLENDER_BIN`` env var provides the Blender binary (test skips if unset).
 
 Run with::
 
     BLENDER_BIN=/path/to/blender \
-        python -m unittest tests.integration.test_chat_client -v
+        python -m unittest tests.integration.test_blender_mcp_with_llm -v
 """
 
 __all__ = ()
@@ -88,7 +91,7 @@ def use_screenshot_check() -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Helpers (duplicated from test_background_server.py, same pattern).
+# Helpers (duplicated from test_blender_mcp_with_blender.py, same pattern).
 
 def _blender_env(tmpdir: str) -> dict[str, str]:
     """

@@ -3,14 +3,22 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Integration test for the full MCP pipeline.
+Integration test for MCP & Blender.
+
+Verifies: Mock-LLM-Client -> MCP server -> Blender addon -> Blender.
+
+The "Mock-LLM-Client" simply sends requests to the MCP server,
+the "useful" part of these tests is that it connects to a real Blender instance
+and runs the MCP tools verifying they give correct results.
+
+This runs in both background & foreground mode (headless)
+where it's possible to check that taking screenshots works properly.
 
 Defaults to ``blender`` and ``blender-mcp`` from ``PATH``.
 Override with ``BLENDER_BIN`` and ``BLENDER_MCP`` environment variables.
 
-Foreground and interactive tests run headless via a Wayland display
-server (weston). Set ``BLENDER_MCP_FOREGROUND=1`` to use the real
-display instead.
+Foreground tests run headless via a Wayland display server (Weston).
+Set ``BLENDER_MCP_FOREGROUND=1`` to use the real display instead.
 """
 
 __all__ = ()

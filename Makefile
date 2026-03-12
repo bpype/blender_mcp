@@ -85,15 +85,15 @@ help:
 test:
 	$(PYTHON) tests/test_tool_listing.py -v
 	$(PYTHON) tests/test_mcp_server.py -v
-	$(PYTHON) tests/test_background_server.py -v
+	$(PYTHON) tests/test_blender_mcp_with_blender.py -v
 
 test_integration:
 ifdef TESTS_LIST
 	@$(PYTHON) -c "import unittest, sys; sys.path.insert(0, '.'); \
-	from tests.integration.test_chat_client import TestChatClient; \
+	from tests.integration.test_blender_mcp_with_llm import TestChatClient; \
 	[print(t.id().rsplit('.', 1)[-2].split('.')[-1] + '.' + t.id().rsplit('.', 1)[-1]) for t in unittest.TestLoader().loadTestsFromTestCase(TestChatClient)]"
 else
-	$(PYTHON) tests/integration/test_chat_client.py -v $$(echo '$(TESTS)' | tr ':' ' ')
+	$(PYTHON) tests/integration/test_blender_mcp_with_llm.py -v $$(echo '$(TESTS)' | tr ':' ' ')
 endif
 
 format:
