@@ -15,21 +15,29 @@ from typing import NamedTuple
 
 
 class Result(NamedTuple):
-    window_width: int
-    window_height: int
-    screen_name: str
-    workspace: str
-    scene: str
-    areas: list[dict[str, object]]
-    active_object: dict[str, object] | None
-    selected_objects: list[dict[str, str]]
+    status: str
+    window_width: int = 0
+    window_height: int = 0
+    screen_name: str = ""
+    workspace: str = ""
+    scene: str = ""
+    areas: list[dict[str, object]] = []
+    active_object: dict[str, object] | None = None
+    selected_objects: list[dict[str, str]] = []
+    message: str | None = None
 
 
 def main(params: None) -> Result:
     del params
     import bpy  # pylint: disable=import-error,no-name-in-module
 
+    if bpy.app.background:
+        return Result(status="error", message="Window layout is not available in background mode")
+
     window = bpy.context.window
+    if window is None:
+        return Result(status="error", message="No active window")
+
     screen = window.screen
 
     areas: list[dict[str, object]] = []
@@ -98,6 +106,7 @@ def main(params: None) -> Result:
     selected = [{"name": obj.name, "type": obj.type} for obj in bpy.context.selected_objects]
 
     return Result(
+        status="ok",
         window_width=window.width,
         window_height=window.height,
         screen_name=screen.name,
