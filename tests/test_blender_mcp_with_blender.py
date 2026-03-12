@@ -417,7 +417,10 @@ class _TestServerMixin:
         )
         data = json.loads(text_item["text"])
         if data.get("status") == "ok":
-            return data["result"]
+            # Tools that run code in Blender wrap their response in
+            # `{"status": "ok", "result": ...}`, but toolcode-based
+            # tools may omit the `result` key.
+            return data.get("result", data)
         return data
 
     def setUp(self) -> None:
@@ -527,11 +530,14 @@ class _TestServerMixin:
 
     def test_get_screenshot_of_window_as_json(self) -> None:
         data = self._test_tool("get_screenshot_of_window_as_json")
-        self.assertEqual(data["scene"], "Scene")
-        self.assertIsInstance(data["areas"], list)
-        self.assertTrue(len(data["areas"]) > 0)
-        self.assertIsNotNone(data["active_object"])
-        self.assertIn("name", data["active_object"])
+        if not self._interactive:
+            self.assertEqual(data["status"], "error")
+        else:
+            self.assertEqual(data["scene"], "Scene")
+            self.assertIsInstance(data["areas"], list)
+            self.assertTrue(len(data["areas"]) > 0)
+            self.assertIsNotNone(data["active_object"])
+            self.assertIn("name", data["active_object"])
 
     # -----------------------------------------------------------------
     # CLI tools.
@@ -611,6 +617,7 @@ class _TestServerMixin:
     def test_get_objects_summary(self) -> None:
         data = self._test_tool("get_objects_summary")
         self.assertEqual(data, {
+            "status": "ok",
             "scene_name": "Scene",
             "active_workspace": "Layout",
             "active_object": "Cube",
