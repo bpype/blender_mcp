@@ -99,14 +99,14 @@ format:
 	autopep8 --in-place --recursive mcp/ addon/
 
 check_license:
-	@$(PYTHON) scripts/check_license.py
+	@$(PYTHON) _misc/check_license.py
 
 check_ascii:
 	@! pcregrep -rn --include='\.py$$' --include='\.toml$$' '[^\x00-\x7F]' mcp/ addon/ chat_client/ || \
 		{ echo "ERROR: non-ASCII characters found"; exit 1; }
 
 check_mypy:
-	@! $(PYTHON) -m mypy --exclude 'data/api/examples/' $(PYTHON_SOURCE_DIRS_TO_CHECK) scripts/ 2>&1 | grep -v '^stubs/' | grep ': error:' || \
+	@! $(PYTHON) -m mypy --exclude 'data/api/examples/' $(PYTHON_SOURCE_DIRS_TO_CHECK) _misc/ 2>&1 | grep -v '^stubs/' | grep ': error:' || \
 		{ echo "mypy: found errors"; exit 1; }
 
 check_pylint:
@@ -123,17 +123,17 @@ check_vulture:
 		--min-confidence 61
 
 check_namespace:
-	@$(PYTHON) scripts/check_namespace.py --skip mcp/blmcp/data/api/examples $(PYTHON_SOURCE_DIRS_TO_CHECK)
+	@$(PYTHON) _misc/check_namespace.py --skip mcp/blmcp/data/api/examples $(PYTHON_SOURCE_DIRS_TO_CHECK)
 
 check_all: check_ruff check_mypy check_vulture check_license check_ascii check_namespace
 
 readme_update:
-	$(PYTHON) scripts/readme_update_from_tools.py
+	$(PYTHON) _misc/readme_update_from_tools.py
 
 update_reference_manual:
 	@test -n "$(MANUAL_DIR)" || { echo "Usage: make update_reference_manual MANUAL_DIR=/path/to/blender/manual"; exit 1; }
-	$(PYTHON) scripts/update_reference_manual.py "$(MANUAL_DIR)"
+	$(PYTHON) _misc/update_reference_manual.py "$(MANUAL_DIR)"
 
 update_reference_api:
 	@test -n "$(API_DIR)" || { echo "Usage: make update_reference_api API_DIR=/path/to/api"; exit 1; }
-	$(PYTHON) scripts/update_reference_api.py "$(API_DIR)"
+	$(PYTHON) _misc/update_reference_api.py "$(API_DIR)"

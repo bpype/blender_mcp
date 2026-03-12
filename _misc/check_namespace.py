@@ -7,7 +7,7 @@ Verify that every Python module defines ``__all__``.
 
 Usage::
 
-    python scripts/check_namespace.py mcp/ addon/
+    python _misc/check_namespace.py mcp/ addon/
 """
 
 __all__ = (
