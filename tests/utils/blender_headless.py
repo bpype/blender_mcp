@@ -3,6 +3,9 @@
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 
+# NOTE: this is copied from Blender: `./tests/utils/blender_headless.py`.
+# We could consider bundling it with blender so 3rd party packages can use it for testing.
+
 """
 Wrapper for Blender that launches a graphical instances of Blender
 in its own display-server.
