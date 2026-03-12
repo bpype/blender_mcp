@@ -94,6 +94,11 @@ def _create_parser() -> argparse.ArgumentParser:
         help="Directory to skip (may be repeated).",
     )
     parser.add_argument(
+        "--verbose", "-v",
+        action="store_true",
+        help="Print files without errors too.",
+    )
+    parser.add_argument(
         "paths",
         nargs="+",
         metavar="PATH",
@@ -108,11 +113,15 @@ def main() -> int:
     count = 0
 
     skip_dirs: list[str] = args.skip_dirs
+    verbose: bool = args.verbose
     paths: list[str] = args.paths
 
     for path in paths:
         if os.path.isfile(path):
-            files = [path] if path.endswith(".py") else []
+            if any(path == d or path.startswith(d + os.sep) for d in skip_dirs):
+                files = []
+            else:
+                files = [path] if path.endswith(".py") else []
         else:
             files = []
             for dirpath, _dirnames, filenames in os.walk(path):
@@ -123,6 +132,8 @@ def main() -> int:
                         files.append(os.path.join(dirpath, filename))
 
         for filepath in files:
+            filename = os.path.basename(filepath)
+
             with open(filepath, "r", encoding="utf-8") as fh:
                 source = fh.read()
 
@@ -146,7 +157,8 @@ def main() -> int:
                 count += 1
                 continue
 
-            print("{:s}: {:s}".format(filepath, ", ".join(all_names) if all_names else "(empty)"))
+            if verbose:
+                print("{:s}: {:s}".format(filepath, ", ".join(all_names) if all_names else "(empty)"))
 
             all_set = set(all_names)
             defs, module_names = _extract_names(tree)
@@ -157,6 +169,16 @@ def main() -> int:
                     continue
                 print("  Not in __all__ and missing '_' prefix: {:s}".format(name))
                 errors += 1
+            # For package init files, subpackage directories and sibling
+            # modules count as implicitly defined names.
+            if filename == "__init__.py":
+                pkg_dir = os.path.dirname(filepath)
+                for entry in os.scandir(pkg_dir):
+                    if entry.is_dir() and os.path.isfile(os.path.join(entry.path, filename)):
+                        module_names.add(entry.name)
+                    elif entry.is_file() and entry.name.endswith(".py") and entry.name != filename:
+                        module_names.add(entry.name[:-3])
+
             for name in all_names:
                 if name in module_names:
                     continue
@@ -164,7 +186,7 @@ def main() -> int:
                 errors += 1
             count += 1
 
-    print("Checked {:d} files, {:d} errors.".format(count, errors))
+    print("Checked {:d} file(s), {:d} error(s).".format(count, errors))
     return 1 if errors else 0
 
 
