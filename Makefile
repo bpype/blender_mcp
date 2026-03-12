@@ -119,6 +119,7 @@ check_ruff:
 
 check_vulture:
 	vulture $(PYTHON_SOURCE_DIRS_TO_CHECK) \
+		--exclude mcp/blmcp/data/api/examples \
 		--ignore-decorators '@mcp.tool,@mcp.prompt' \
 		--ignore-names 'bl_*,draw,execute,exclude' \
 		--min-confidence 61
