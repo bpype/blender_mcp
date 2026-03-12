@@ -15,6 +15,7 @@ from typing import NamedTuple
 
 
 class Result(NamedTuple):
+    status: str
     direct_libraries: list[dict[str, object]]
     indirect_libraries: list[dict[str, object]]
     total_library_count: int
@@ -55,6 +56,7 @@ def main(params: None) -> Result:
             indirect.append(info)
 
     return Result(
+        status="ok",
         direct_libraries=direct,
         indirect_libraries=indirect,
         total_library_count=len(bpy.data.libraries),

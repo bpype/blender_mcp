@@ -16,28 +16,42 @@ from typing import NamedTuple
 
 class Result(NamedTuple):
     status: str
-    window_width: int = 0
-    window_height: int = 0
-    screen_name: str = ""
-    workspace: str = ""
-    scene: str = ""
-    areas: list[dict[str, object]] = []
-    active_object: dict[str, object] | None = None
-    selected_objects: list[dict[str, str]] = []
+    window_width: int
+    window_height: int
+    screen_name: str
+    workspace: str
+    scene: str
+    areas: list[dict[str, object]]
+    active_object: dict[str, object] | None
+    selected_objects: list[dict[str, str]]
     message: str | None = None
 
 
 def main(params: None) -> Result:
     del params
     import bpy  # pylint: disable=import-error,no-name-in-module
+    from bpy import context  # pylint: disable=import-error,no-name-in-module
 
+    error: str | None = None
+    window = context.window
     if bpy.app.background:
-        return Result(status="error", message="Window layout is not available in background mode")
+        error = "Window layout is not available in background mode"
+    elif window is None:
+        error = "No active window"
 
-    window = bpy.context.window
-    if window is None:
-        return Result(status="error", message="No active window")
-
+    if error is not None:
+        return Result(
+            status="error",
+            window_width=0,
+            window_height=0,
+            screen_name="",
+            workspace="",
+            scene="",
+            areas=[],
+            active_object=None,
+            selected_objects=[],
+            message=error,
+        )
     screen = window.screen
 
     areas: list[dict[str, object]] = []
@@ -93,17 +107,17 @@ def main(params: None) -> Result:
         area_info["regions"] = regions
         areas.append(area_info)
 
-    active = bpy.context.active_object
+    active = context.active_object
     active_info = None
     if active:
         active_info = {
             "name": active.name,
             "type": active.type,
-            "mode": bpy.context.mode,
+            "mode": context.mode,
             "location": list(active.location),
         }
 
-    selected = [{"name": obj.name, "type": obj.type} for obj in bpy.context.selected_objects]
+    selected = [{"name": obj.name, "type": obj.type} for obj in context.selected_objects]
 
     return Result(
         status="ok",
@@ -111,7 +125,7 @@ def main(params: None) -> Result:
         window_height=window.height,
         screen_name=screen.name,
         workspace=window.workspace.name,
-        scene=bpy.context.scene.name,
+        scene=context.scene.name,
         areas=areas,
         active_object=active_info,
         selected_objects=selected,

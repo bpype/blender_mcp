@@ -20,6 +20,7 @@ _LayerCollection = Any
 
 
 class Result(NamedTuple):
+    status: str
     scene_name: str
     active_workspace: str | None
     active_object: str | None
@@ -76,6 +77,7 @@ def main(params: None) -> Result:
     active = view_layer.objects.active
     window = getattr(context, "window", None)
     return Result(
+        status="ok",
         scene_name=scene.name,
         active_workspace=window.workspace.name if window else None,
         active_object=active.name if active else None,

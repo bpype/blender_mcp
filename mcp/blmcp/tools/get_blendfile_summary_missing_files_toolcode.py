@@ -16,6 +16,7 @@ from typing import NamedTuple
 
 
 class Result(NamedTuple):
+    status: str
     missing_files: list[dict[str, str]]
     total_checked: int
 
@@ -43,4 +44,4 @@ def main(params: None) -> Result:
         flags={"SKIP_PACKED", "SKIP_WEAK_REFERENCES", "RESOLVE_TOKEN"},
     )
 
-    return Result(missing_files=missing, total_checked=checked)
+    return Result(status="ok", missing_files=missing, total_checked=checked)

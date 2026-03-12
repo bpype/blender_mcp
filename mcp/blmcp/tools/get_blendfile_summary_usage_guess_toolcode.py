@@ -19,6 +19,7 @@ _DEFAULT_CUBE_VERTS = 8
 
 
 class Result(NamedTuple):
+    status: str
     usage_guesses: dict[str, dict[str, int]]
 
 
@@ -245,4 +246,4 @@ def main(params: None) -> Result:
         use_case, scores = fn(data, scene)
         usages[use_case] = scores
 
-    return Result(usage_guesses=usages)
+    return Result(status="ok", usage_guesses=usages)

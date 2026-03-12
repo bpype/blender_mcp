@@ -21,6 +21,7 @@ _MAX_BACKUPS = 32
 
 
 class Result(NamedTuple):
+    status: str
     filepath: str
     is_saved: bool
     is_dirty: bool
@@ -56,6 +57,7 @@ def main(params: None) -> Result:
             })
 
     return Result(
+        status="ok",
         filepath=filepath,
         is_saved=bool(filepath),
         is_dirty=bpy.data.is_dirty,

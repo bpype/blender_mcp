@@ -15,6 +15,7 @@ from typing import NamedTuple
 
 
 class Result(NamedTuple):
+    status: str
     datablock_counts: dict[str, int]
     render_engine: str
     scene_name: str
@@ -42,6 +43,7 @@ def main(params: None) -> Result:
     window = getattr(bpy.context, "window", None)
 
     return Result(
+        status="ok",
         datablock_counts=counts,
         render_engine=bpy.context.scene.render.engine,
         scene_name=bpy.context.scene.name,
