@@ -749,7 +749,7 @@ class _TestServerMixin:
         })
         self.assertEqual(data["status"], "error")
         self.assertIn(
-            "RuntimeError: Operator 'wm.read_factory_settings' is not allowed "
+            "RuntimeError: Operator 'bpy.ops.wm.read_factory_settings()' is not allowed "
             "in LLM-generated code: Resets all user preferences and startup file, "
             "use bpy.ops.wm.read_homefile() or "
             "bpy.ops.wm.read_homefile(use_empty=True, use_factory_startup=True) instead",

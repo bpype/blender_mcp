@@ -116,9 +116,18 @@ class WeakSandboxForLLM:
             if key in _BLOCKED_OPS_SET:
                 reason = next(r for op, r in _BLOCKED_OPS if op == key)
 
-                def _blocked(*args: object, **kwargs: object) -> None:  # noqa: ARG001
+                def _blocked(
+                        *args: tuple[object, ...],
+                        **kwargs: dict[str, object],
+                ) -> None:
+                    # Include the arguments as they may help the LLM pin-point the cause of the error.
+                    args_str = ", ".join(
+                        [repr(a) for a in args] + ["{:s}={!r}".format(k, v) for k, v in kwargs.items()]
+                    )
                     raise RuntimeError(
-                        "Operator '{:s}' is not allowed in LLM-generated code: {:s}".format(key, reason)
+                        "Operator 'bpy.ops.{:s}({:s})' is not allowed in LLM-generated code: {:s}".format(
+                            key, args_str, reason,
+                        )
                     )
 
                 return _blocked
