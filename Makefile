@@ -103,8 +103,7 @@ check_license:
 	@$(PYTHON) _misc/check_license.py
 
 check_ascii:
-	@! pcregrep -rn --include='\.py$$' --include='\.toml$$' '[^\x00-\x7F]' mcp/ addon/ chat_client/ || \
-		{ echo "ERROR: non-ASCII characters found"; exit 1; }
+	@$(PYTHON) _misc/check_ascii.py
 
 check_mypy:
 	@! $(PYTHON) -m mypy --exclude 'data/api/examples/' $(PYTHON_SOURCE_DIRS_TO_CHECK) _misc/ 2>&1 | grep -v '^stubs/' | grep ': error:' || \
