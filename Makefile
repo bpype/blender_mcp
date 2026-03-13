@@ -83,9 +83,9 @@ help:
 	@echo "$$HELP_TEXT"
 
 test:
-	$(PYTHON) tests/test_tool_listing.py -v
-	$(PYTHON) tests/test_mcp_server.py -v
-	$(PYTHON) tests/test_blender_mcp_with_blender.py -v
+	$(PYTHON) tests/test_tool_listing.py
+	$(PYTHON) tests/test_mcp_server.py
+	$(PYTHON) tests/test_blender_mcp_with_blender.py
 
 test_integration:
 ifdef TESTS_LIST
@@ -93,7 +93,7 @@ ifdef TESTS_LIST
 	from tests.integration.test_blender_mcp_with_llm import TestChatClient; \
 	[print(t.id().rsplit('.', 1)[-2].split('.')[-1] + '.' + t.id().rsplit('.', 1)[-1]) for t in unittest.TestLoader().loadTestsFromTestCase(TestChatClient)]"
 else
-	$(PYTHON) tests/integration/test_blender_mcp_with_llm.py -v $(TESTS)
+	$(PYTHON) tests/integration/test_blender_mcp_with_llm.py $(TESTS)
 endif
 
 format:
