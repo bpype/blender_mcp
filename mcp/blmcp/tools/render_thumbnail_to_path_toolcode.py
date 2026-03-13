@@ -33,17 +33,11 @@ class Result(NamedTuple):
     message: str | None = None
 
 
+# @include_begin: _template_backup_attrs.py
 @contextlib.contextmanager
 def _backup_attrs(obj: object, *names: str) -> Generator[dict[str, object], None, None]:
-    """
-    Context manager that saves named attributes on entry and restores them on exit.
-    """
-    saved = {name: getattr(obj, name) for name in names}
-    try:
-        yield saved
-    finally:
-        for name, value in saved.items():
-            setattr(obj, name, value)
+    yield {}
+# @include_end
 
 
 def main(params: Params) -> Result:

@@ -26,13 +26,17 @@ def register(mcp: FastMCP) -> None:
     @mcp.tool()
     def get_screenshot_of_area_as_image(
         area_ui_type: AreaUIType,
+        size_limit_in_bytes: int = 0,
     ) -> Image:
         """
         Take a screenshot of a single Blender area and return it as a PNG image.
 
         *area_ui_type* matches the area's ``ui_type``.
+
+        *size_limit_in_bytes* caps the image size in bytes.
+        Zero (the default) uses the MCP message size limit.
         """
-        p = Params(area_ui_type=area_ui_type)
+        p = Params(area_ui_type=area_ui_type, size_limit_in_bytes=size_limit_in_bytes)
         response = send_code(toolcode_format_call(_TOOL_CALL, p), strict_json=True)
         if response.get("status") != "ok":
             raise RuntimeError(str(response.get("message", "Unknown error")))

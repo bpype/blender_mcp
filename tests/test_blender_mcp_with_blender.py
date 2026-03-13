@@ -528,6 +528,19 @@ class _TestServerMixin:
     def test_get_screenshot_of_window_as_image(self) -> None:
         self._call_tool_screenshot("get_screenshot_of_window_as_image")
 
+    def test_get_screenshot_of_window_as_image_size_limit(self) -> None:
+        size_limit = 16 * 1024  # 16 KB.
+        content = self._call_tool_screenshot("get_screenshot_of_window_as_image", {
+            "size_limit_in_bytes": size_limit,
+        })
+        if self._interactive:
+            image_data = content[0].get("data", "")
+            raw_bytes = base64.b64decode(image_data)
+            self.assertLessEqual(
+                len(raw_bytes), size_limit,
+                "Screenshot exceeds {:d} byte limit ({:d} bytes)".format(size_limit, len(raw_bytes)),
+            )
+
     def test_get_screenshot_of_window_as_json(self) -> None:
         data = self._test_tool("get_screenshot_of_window_as_json")
         if not self._interactive:

@@ -12,7 +12,7 @@ __all__ = (
     "toolcode_wrap_with_calling_convention",
 )
 
-from pathlib import Path
+import os
 
 _PARAMS_PLACEHOLDER = "__BLMCP_PARAMS__"
 
@@ -30,9 +30,54 @@ def toolcode_load_from_filepath(filepath: str) -> str:
 
     Given ``/path/to/tools/my_tool.py``, returns the contents of
     ``/path/to/tools/my_tool_toolcode.py``.
+
+    Blocks delimited by ``# @include_begin: _template_foo.py`` and
+    ``# @include_end`` are replaced with the contents of the referenced
+    file (resolved relative to the toolcode file's directory).
     """
-    p = Path(filepath)
-    return p.with_name(p.stem + "_toolcode.py").read_text(encoding="utf-8")
+    base, ext = os.path.splitext(filepath)
+    toolcode_path = base + "_toolcode" + ext
+    return _toolcode_expand_includes(toolcode_path)
+
+
+_INCLUDE_BEGIN_PREFIX = "# @include_begin: "
+_INCLUDE_END = "# @include_end"
+
+
+def _toolcode_expand_includes(toolcode_path: str) -> str:
+    with open(toolcode_path, "r", encoding="utf-8") as fh:
+        lines = fh.read().splitlines(True)
+    toolcode_dir = os.path.dirname(toolcode_path)
+    result: list[str] = []
+    skip = False
+    include_name = ""
+    for line in lines:
+        if line.startswith(_INCLUDE_BEGIN_PREFIX):
+            if skip:
+                raise ValueError(
+                    "Nested {:s} for {:s} in {:s}".format(_INCLUDE_BEGIN_PREFIX.rstrip(), include_name, toolcode_path)
+                )
+            include_name = line[len(_INCLUDE_BEGIN_PREFIX):].rstrip()
+            include_path = os.path.join(toolcode_dir, include_name)
+            if not os.path.exists(include_path):
+                raise FileNotFoundError(
+                    "Include file {:s} not found (from {:s})".format(include_path, toolcode_path)
+                )
+            with open(include_path, "r", encoding="utf-8") as fh:
+                result.append(fh.read())
+            if result[-1] and not result[-1].endswith("\n"):
+                result.append("\n")
+            skip = True
+        elif skip:
+            if line.startswith(_INCLUDE_END):
+                skip = False
+        else:
+            result.append(line)
+    if skip:
+        raise ValueError(
+            "Missing {:s} for {:s} in {:s}".format(_INCLUDE_END, include_name, toolcode_path)
+        )
+    return "".join(result)
 
 
 def toolcode_wrap_with_calling_convention(

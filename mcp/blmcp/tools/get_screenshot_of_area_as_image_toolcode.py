@@ -18,6 +18,11 @@ import os
 import tempfile
 from typing import Literal, NamedTuple
 
+# MCP messages are limited to 1,048,576 bytes (1 MB). The image is base64-encoded
+# which expands data by 4/3. A typical full-resolution PNG screenshot exceeds
+# this, so we downscale iteratively until it fits.
+_IMAGE_SIZE_LIMIT_IN_BYTES = (1_048_576 * 3) // 4
+
 # Rarely changes, regenerate with:
 # `list(bpy.types.Area.bl_rna.properties["ui_type"].enum_items.keys())`
 AreaUIType = Literal[
@@ -49,12 +54,21 @@ AreaUIType = Literal[
 
 class Params(NamedTuple):
     area_ui_type: AreaUIType
+    size_limit_in_bytes: int = 0
 
 
 class Result(NamedTuple):
     status: str
     image_base64: str | None = None
     message: str | None = None
+
+
+# @include_begin: _template_image_downscale_to_size_limit.py
+def _image_downscale_to_size_limit(
+        tmpdir: str, filepath: str, size_limit_in_bytes: int, size_tolerance_in_bytes: int = 0,
+) -> bytes:
+    return b''
+# @include_end
 
 
 def main(params: Params) -> Result:
@@ -85,19 +99,22 @@ def main(params: Params) -> Result:
                 params.area_ui_type, ", ".join(available),
             ),
         )
-    fd, filepath = tempfile.mkstemp(suffix=".png", prefix="blmcp_screenshot_")
-    os.close(fd)
-    try:
+
+    size_limit = params.size_limit_in_bytes if params.size_limit_in_bytes > 0 else _IMAGE_SIZE_LIMIT_IN_BYTES
+
+    with tempfile.TemporaryDirectory(prefix="blmcp_screenshot_") as tmpdir:
+        filepath_screenshot = os.path.join(tmpdir, "screenshot.png")
         with context.temp_override(window=window, area=area):
             try:
-                bpy.ops.screen.screenshot_area(filepath=filepath)
+                bpy.ops.screen.screenshot_area(filepath=filepath_screenshot)
             except RuntimeError as ex:
                 return Result(status="error", message=str(ex))
 
-        with open(filepath, "rb") as fh:
-            data = base64.b64encode(fh.read()).decode("ascii")
-    finally:
-        if os.path.exists(filepath):
-            os.remove(filepath)
+        image_data = _image_downscale_to_size_limit(
+            tmpdir, filepath_screenshot,
+            size_limit_in_bytes=size_limit,
+            size_tolerance_in_bytes=size_limit // 16,
+        )
+        data = base64.b64encode(image_data).decode("ascii")
 
     return Result(status="ok", image_base64=data)

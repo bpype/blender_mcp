@@ -56,7 +56,7 @@ def main() -> int:
     import blmcp.tools as tools_pkg
 
     for _importer, modname, _ispkg in pkgutil.iter_modules(tools_pkg.__path__):
-        if modname.endswith("_toolcode"):
+        if modname.endswith("_toolcode") or modname.startswith("_template_"):
             continue
         mod = importlib.import_module("blmcp.tools.{:s}".format(modname))
         if hasattr(mod, "register"):

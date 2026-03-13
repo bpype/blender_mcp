@@ -252,7 +252,10 @@ EXPECTED_TOOLS = [
         "description": "\n"
         "Take a screenshot of a single Blender area and return it as a PNG image.\n"
         "\n"
-        "*area_ui_type* matches the area's ``ui_type``.\n",
+        "*area_ui_type* matches the area's ``ui_type``.\n"
+        "\n"
+        "*size_limit_in_bytes* caps the image size in bytes.\n"
+        "Zero (the default) uses the MCP message size limit.\n",
         "inputSchema": {
             "properties": {
                 "area_ui_type": {
@@ -282,6 +285,11 @@ EXPECTED_TOOLS = [
                     ],
                     "title": "Area Ui Type",
                     "type": "string"
+                },
+                "size_limit_in_bytes": {
+                    "default": 0,
+                    "title": "Size Limit In Bytes",
+                    "type": "integer"
                 }
             },
             "required": [
@@ -294,9 +302,18 @@ EXPECTED_TOOLS = [
     {
         "name": "get_screenshot_of_window_as_image",
         "description": "\n"
-        "Take a screenshot of the entire Blender window and return it as a PNG image.\n",
+        "Take a screenshot of the entire Blender window and return it as a PNG image.\n"
+        "\n"
+        "*size_limit_in_bytes* caps the image size in bytes.\n"
+        "Zero (the default) uses the MCP message size limit.\n",
         "inputSchema": {
-            "properties": {},
+            "properties": {
+                "size_limit_in_bytes": {
+                    "default": 0,
+                    "title": "Size Limit In Bytes",
+                    "type": "integer"
+                }
+            },
             "title": "get_screenshot_of_window_as_imageArguments",
             "type": "object"
         }
