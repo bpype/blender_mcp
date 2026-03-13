@@ -19,7 +19,11 @@ The data flow is::
 
    MCP Client  <--MCP/stdio-->  blender-mcp  <--TCP socket-->  Blender Addon
 
-See `readme_local_llm.rst <readme_local_llm.rst>`__ for step-by-step instructions to setup and run an LLM locally.
+- See `readme_local_llm.rst <readme_local_llm.rst>`__
+  for step-by-step instructions to setup and run an LLM locally.
+- See `readme_prompt_examples.rst <readme_prompt_examples.rst>`__
+  for some prompts, files in Blender source repository:
+  `projects.blender.org <https://projects.blender.org/blender/blender/>`__
 
 
 Blender Addon
