@@ -30,6 +30,8 @@ import select
 import socket
 import sys
 import traceback
+from collections.abc import Callable
+from typing import NamedTuple
 
 # Seconds between main-thread timer ticks.
 TIMER_INTERVAL_ACTIVE = 0.05
@@ -172,6 +174,19 @@ class _State:
 _state = _State()
 
 
+class _ExecResult(NamedTuple):
+    """
+    Result of executing tool-code.
+
+    When *check_fn* is not ``None``, the caller must defer the response
+    and poll the callable for completion (see ``deferred_tool``).
+    Otherwise *response* is the final result to send.
+    """
+
+    response: dict[str, object]
+    check_fn: Callable[[], dict[str, object] | None] | None = None
+
+
 def _encode_response(response: dict[str, object]) -> bytes:
     """
     Serialize a response dict as null-byte-delimited JSON bytes.
@@ -179,9 +194,12 @@ def _encode_response(response: dict[str, object]) -> bytes:
     return (json.dumps(response) + "\0").encode("utf-8")
 
 
-def _execute_code(code: str, strict_json: bool) -> dict[str, object]:
+def _execute_code(
+        code: str,
+        strict_json: bool,
+) -> _ExecResult:
     """
-    Execute *code* and return a response dict.
+    Execute *code* and return an ``_ExecResult``.
 
     :param strict_json: When true, the response *must* be serializable.
         Should always be true, when executing Python code we have full-control over,
@@ -204,7 +222,18 @@ def _execute_code(code: str, strict_json: bool) -> dict[str, object]:
                 response["stdout"] = captured.stdout
             if captured.stderr:
                 response["stderr"] = captured.stderr
-            return response
+            return _ExecResult(response)
+
+    # Check for a deferred response (background job in progress).
+    check_fn_raw = namespace.get("check_is_finished")
+    if check_fn_raw is not None and callable(check_fn_raw):
+        check_fn: Callable[[], dict[str, object] | None] = check_fn_raw
+        response = {}
+        if captured.stdout:
+            response["stdout"] = captured.stdout
+        if captured.stderr:
+            response["stderr"] = captured.stderr
+        return _ExecResult(response, check_fn)
 
     result = namespace["result"]
     if not isinstance(result, dict):
@@ -238,27 +267,34 @@ def _execute_code(code: str, strict_json: bool) -> dict[str, object]:
         response["stdout"] = captured.stdout
     if captured.stderr:
         response["stderr"] = captured.stderr
-    return response
+    return _ExecResult(response)
 
 
-def _handle_request(data: bytes) -> dict[str, object]:
+def _handle_request(
+        data: bytes,
+) -> tuple[_ExecResult, bool]:
     """
     Parse a raw request and execute it.
+
+    Return ``(exec_result, strict_json)``.
     """
     request = json.loads(data)
     if request.get("type") != "execute":
-        return {
+        return _ExecResult({
             "status": "error",
             "message": "Unknown request type: {!r}".format(request.get("type")),
-        }
+        }), False
     code = request.get("code", "")
     strict_json = request["strict_json"]
     if use_log:
         print("request:\n{:s}".format(code), file=sys.stderr)
-    response = _execute_code(code, strict_json=strict_json)
+    exec_result = _execute_code(code, strict_json=strict_json)
     if use_log:
-        print("response: {:s}".format(json.dumps(response, indent=2)), file=sys.stderr)
-    return response
+        if exec_result.check_fn is not None:
+            print("response: deferred", file=sys.stderr)
+        else:
+            print("response: {:s}".format(json.dumps(exec_result.response, indent=2)), file=sys.stderr)
+    return exec_result, strict_json
 
 
 def _close_client(client: _Client) -> None:
@@ -351,14 +387,32 @@ def _service_clients() -> bool:
         # Execute the request and send the response.
         request_data = bytes(client.buffer[:client.buffer.index(b"\0")])
         try:
-            response = _handle_request(request_data)
+            exec_result, strict_json = _handle_request(request_data)
         except Exception:  # pylint: disable=broad-exception-caught
-            response = {"status": "error", "message": traceback.format_exc()}
-        try:
-            client.conn.sendall(_encode_response(response))
-        except OSError:
-            pass
-        _close_client(client)
+            exec_result = _ExecResult({"status": "error", "message": traceback.format_exc()})
+            strict_json = False
+
+        if exec_result.check_fn is not None:
+            # Deferred response: hand the connection to deferred_tool.
+            from . import deferred_tool
+            deferred_tool.add(
+                client.conn,
+                exec_result.check_fn,
+                strict_json,
+                str(exec_result.response.get("stdout", "")),
+                str(exec_result.response.get("stderr", "")),
+            )
+            # Remove from clients without closing the socket.
+            try:
+                _state.clients.remove(client)
+            except ValueError:
+                pass
+        else:
+            try:
+                client.conn.sendall(_encode_response(exec_result.response))
+            except OSError:
+                pass
+            _close_client(client)
         did_work = True
 
     return did_work
@@ -366,12 +420,20 @@ def _service_clients() -> bool:
 
 def poll() -> bool:
     """
-    Non-blocking poll: accept new connections and service existing clients.
+    Non-blocking poll: accept new connections, service existing clients,
+    and check deferred responses.
 
-    Return ``True`` if at least one request was executed.
+    Return ``True`` if work was done or deferred clients are pending.
     """
+    from . import deferred_tool
     _accept_clients()
-    return _service_clients()
+    did_work = _service_clients()
+    if deferred_tool.poll():
+        did_work = True
+    # Stay in active polling mode while deferred clients exist.
+    if deferred_tool.has_pending():
+        did_work = True
+    return did_work
 
 
 def _handle_blocking_client(conn: socket.socket) -> bool:
@@ -399,10 +461,10 @@ def _handle_blocking_client(conn: socket.socket) -> bool:
 
         request_data = bytes(buf[:buf.index(b"\0")])
         try:
-            response = _handle_request(request_data)
+            exec_result, _strict_json = _handle_request(request_data)
         except Exception:  # pylint: disable=broad-exception-caught
-            response = {"status": "error", "message": traceback.format_exc()}
-        conn.sendall(_encode_response(response))
+            exec_result = _ExecResult({"status": "error", "message": traceback.format_exc()})
+        conn.sendall(_encode_response(exec_result.response))
         return True
     except socket.timeout:
         try:
@@ -473,8 +535,10 @@ def start(host: str, port: int) -> None:
 
 def stop() -> None:
     """
-    Close the listening socket and all client connections.
+    Close the listening socket, all client connections, and deferred responses.
     """
+    from . import deferred_tool
+
     sock = _state.sock
     _state.sock = None
     if sock is not None:
@@ -489,6 +553,8 @@ def stop() -> None:
         except Exception:  # pylint: disable=broad-exception-caught
             pass
     _state.clients.clear()
+
+    deferred_tool.close_all()
 
 
 def is_running() -> bool:

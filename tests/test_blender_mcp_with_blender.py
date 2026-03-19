@@ -25,6 +25,7 @@ __all__ = ()
 
 import base64
 import glob
+import inspect
 import json
 import os
 import shlex
@@ -34,6 +35,7 @@ import socket
 import struct
 import subprocess
 import tempfile
+import textwrap
 import threading
 import time
 import unittest
@@ -83,6 +85,18 @@ def _print_untested_tools() -> None:
 
 
 atexit.register(_print_untested_tools)
+
+
+def _python_fn_body_as_string(fn: object) -> str:
+    """
+    Return the body of *fn* as a dedented string.
+    """
+    source = inspect.getsource(fn)
+    lines = source.splitlines()
+    body_lines = lines[1:]
+    code = textwrap.dedent("\n".join(body_lines))
+    assert code.strip(), "Function body is empty"
+    return code
 
 
 def _blender_env(tmpdir: str) -> dict[str, str]:
@@ -313,6 +327,11 @@ class _TestServerMixin:
         blender_args = [blender_bin, "--online-mode"]
         if cls._background:
             blender_args.append("--background")
+        # Use Vulkan when not in background mode. OpenGL (llvmpipe) is known
+        # to crash during shader JIT compilation under headless Weston with
+        # recent LLVM/Mesa versions.
+        if not cls._background:
+            blender_args.extend(["--gpu-backend", "vulkan"])
         if not cls._interactive:
             blender_args.extend([
                 "--command", "blender_mcp", "--port", str(cls._port),
@@ -729,7 +748,19 @@ class _TestServerMixin:
         self.assertGreater(data["size"], 0)
         self.assertTrue(data["png_magic"])
 
+    def _set_cycles_cpu(self) -> None:
+        """Switch to Cycles CPU so rendering works in headless environments."""
+        def code() -> None:
+            import bpy  # type: ignore[import-not-found]
+            bpy.context.scene.render.engine = 'CYCLES'
+            bpy.context.scene.cycles.device = 'CPU'
+            result = {'engine': 'CYCLES'}  # noqa: F841
+        self._test_tool("execute_blender_code", {
+            "code": _python_fn_body_as_string(code),
+        })
+
     def test_render_thumbnail_to_path(self) -> None:
+        self._set_cycles_cpu()
         data = self._test_tool("render_thumbnail_to_path", {
             "output_path": "thumb.png",
         })
@@ -738,12 +769,110 @@ class _TestServerMixin:
         self._assert_valid_png(data["filepath"])
 
     def test_render_viewport_to_path(self) -> None:
+        self._set_cycles_cpu()
         data = self._test_tool("render_viewport_to_path", {
             "output_path": "render.png",
         })
         self.assertEqual(data["status"], "ok")
         self.assertTrue(data["filepath"].endswith("render.png"))
         self._assert_valid_png(data["filepath"])
+
+    # -----------------------------------------------------------------
+    # Deferred tool response.
+
+    def test_deferred_tool_response(self) -> None:
+        """Synthetic test for the deferred response mechanism, not a real tool."""
+        if not self._interactive:
+            # Deferred responses only apply to interactive (timer-based) mode.
+            # In background/command modes, bpy.app.background is True and
+            # operations run synchronously.
+            return
+
+        # Send code that sets check_is_finished. The deferred response
+        # mechanism polls it until it returns a non-None result.
+        def deferred_code() -> None:
+            import time
+            deadline = time.monotonic() + 0.3
+            def check_is_finished():  # noqa: F841 (read by the exec namespace)
+                if time.monotonic() < deadline:
+                    return None
+                return {'deferred': True, 'value': 42}
+            result = {}  # noqa: F841
+        data = self._test_tool("execute_blender_code", {
+            "code": _python_fn_body_as_string(deferred_code),
+        })
+        self.assertTrue(data["deferred"])
+        self.assertEqual(data["value"], 42)
+
+    def test_deferred_tool_render(self) -> None:
+        """Test the deferred path with a real render of a non-trivial scene."""
+        if not self._interactive:
+            return
+
+        def _setup_render_scene() -> None:
+            import bpy  # type: ignore[import-not-found]
+            bpy.ops.wm.read_homefile(use_empty=True)
+            scene = bpy.context.scene
+            # Use Cycles CPU so the render works in headless environments
+            # where EEVEE may not have a usable GPU context.
+            scene.render.engine = 'CYCLES'
+            scene.cycles.device = 'CPU'
+            scene.cycles.samples = 16
+            scene.render.resolution_x = 960
+            scene.render.resolution_y = 540
+            # Camera.
+            bpy.ops.object.camera_add(location=(7, -7, 5))
+            cam = bpy.context.active_object
+            cam.rotation_euler = (1.1, 0, 0.8)
+            scene.camera = cam
+            # Light.
+            bpy.ops.object.light_add(type='SUN', location=(5, -3, 8))
+            # Grid of spheres with different materials.
+            for i in range(6):
+                for j in range(6):
+                    bpy.ops.mesh.primitive_uv_sphere_add(
+                        segments=32, ring_count=16,
+                        radius=0.4, location=(i, j, 0),
+                    )
+                    ob = bpy.context.active_object
+                    mat = bpy.data.materials.new('M_{:d}_{:d}'.format(i, j))
+                    mat.use_nodes = True
+                    bsdf = mat.node_tree.nodes['Principled BSDF']
+                    bsdf.inputs['Base Color'].default_value = (
+                        i / 5.0, j / 5.0, 0.5, 1.0,
+                    )
+                    bsdf.inputs['Roughness'].default_value = i / 5.0
+                    bsdf.inputs['Metallic'].default_value = j / 5.0
+                    ob.data.materials.append(mat)
+            # Ground plane.
+            bpy.ops.mesh.primitive_plane_add(size=20, location=(2.5, 2.5, -0.5))
+            result = {'objects': len(bpy.data.objects)}  # noqa: F841
+
+        self._test_tool("execute_blender_code", {
+            "code": _python_fn_body_as_string(_setup_render_scene),
+        })
+
+        data = self._test_tool("render_viewport_to_path", {
+            "output_path": "deferred_render.png",
+        })
+        self.assertEqual(data["status"], "ok")
+        self.assertTrue(data["filepath"].endswith("deferred_render.png"))
+        self._assert_valid_png(data["filepath"])
+
+    def test_deferred_tool_response_error(self) -> None:
+        """Synthetic test: verify that an exception in check_is_finished is reported."""
+        if not self._interactive:
+            return
+
+        def deferred_error_code() -> None:
+            def check_is_finished():  # noqa: F841
+                raise RuntimeError('checker failed')
+            result = {}  # noqa: F841
+        data = self._test_tool("execute_blender_code", {
+            "code": _python_fn_body_as_string(deferred_error_code),
+        })
+        self.assertEqual(data["status"], "error")
+        self.assertIn("checker failed", data["message"])
 
     # -----------------------------------------------------------------
     # Error handling.

@@ -95,6 +95,18 @@ def toolcode_wrap_with_calling_convention(
     call = "main({:s})".format(_PARAMS_PLACEHOLDER)
 
     if use_result:
-        call += "._asdict()"
+        # When main() returns a callable, store it as ``check_is_finished``
+        # for the addon's deferred response system (see ``deferred_tool.py``).
+        # When it returns a NamedTuple, convert to dict as usual.
+        footer = (
+            "\n_rv = {:s}\n"
+            "if callable(_rv):\n"
+            "    check_is_finished = _rv\n"
+            "    result = {{}}\n"
+            "else:\n"
+            "    result = _rv._asdict()\n"
+        ).format(call)
+    else:
+        footer = "\nresult = {:s}\n".format(call)
 
-    return toolcode + "\nresult = {:s}\n".format(call)
+    return toolcode + footer
