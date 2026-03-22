@@ -283,7 +283,17 @@ def _handle_request(
 
     Return ``(exec_result, strict_json)``.
     """
+
+    # NOTE: This function is not expected to raise exceptions because we control the MCP server, tool-code and add-on.
+    # If there is an error, it will be handled by the caller (the LLM will get the stack trace).
+    #
+    # Even so, if a tool is misbehaving, or a change in the code causes an error,
+    # give a "helpful" response - to avoid the hassles of searching about for the root cause.
+
+    # Invalid JSON is not expected since the MCP server serializes requests with `json.dumps`.
+    # Any error should be rare, the "default" exception path is fine.
     request = json.loads(data)
+
     if request.get("type") != "execute":
         return _ExecResult({
             "status": "error",
@@ -314,6 +324,7 @@ def _handle_request(
             print("response: deferred", file=sys.stderr)
         else:
             print("response: {:s}".format(json.dumps(exec_result.response, indent=2)), file=sys.stderr)
+
     return exec_result, strict_json
 
 
