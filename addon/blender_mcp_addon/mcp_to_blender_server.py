@@ -290,7 +290,22 @@ def _handle_request(
             "message": "Unknown request type: {!r}".format(request.get("type")),
         }), False
     code = request.get("code", "")
-    strict_json = request["strict_json"]
+
+    # Not expected in normal use, but a clear message beats a cryptic trace-back,
+    # Also make it clear where the error should be addressed.
+    strict_json = request.get("strict_json")
+    if not isinstance(strict_json, bool):
+        return (
+            _ExecResult({
+                "status": "error",
+                "message": (
+                    "Internal error: a blender_mcp tool sent a request without the required 'strict_json' boolean key. "
+                    "This is a bug in the tool that generated this code"
+                ),
+            }),
+            False,
+        )
+
     if use_log:
         print("request:\n{:s}".format(code), file=sys.stderr)
     exec_result = _execute_code(code, strict_json=strict_json)
