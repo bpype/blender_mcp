@@ -3,7 +3,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Context manager to capture stdout/stderr while also forwarding to the originals.
+Context manager to capture STDOUT/STDERR while also forwarding to the real output.
+
+Useful so the LLM may use print(..) style debugging and receive the results as part of the response.
 """
 
 __all__ = (
@@ -40,7 +42,7 @@ class _Tee(io.TextIOBase):
 
 class CaptureOutput:
     """
-    Context manager that captures stdout and stderr.
+    Context manager that captures STDOUT & STDERR.
 
     Output is forwarded to the original streams in real time
     and also stored for retrieval via :meth:`stdout` and :meth:`stderr`.

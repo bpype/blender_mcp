@@ -11,7 +11,7 @@ more guidance that some things should not be done.
 Notes:
 
 - The reason *not* to use the prompt is that it tends not to be reliable,
-  sometimes initial requests leave the context window,
+  sometimes initial requests leave the context window (or are ignored for whatever reason),
   so we are better off with a simple way to prevent some things from happening.
 
 - If the LLM (or its user) is motivated these can be worked around.

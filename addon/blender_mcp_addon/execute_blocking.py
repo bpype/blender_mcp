@@ -16,7 +16,7 @@ __all__ = (
     "run",
 )
 
-from . import mcp_to_blender_server as server
+from . import mcp_to_blender_server
 
 
 def run() -> None:
@@ -26,7 +26,7 @@ def run() -> None:
     Catches ``KeyboardInterrupt`` so that Ctrl+C exits cleanly.
     """
     try:
-        while server.is_running():
-            server.poll_blocking()
+        while mcp_to_blender_server.is_running():
+            mcp_to_blender_server.poll_blocking()
     except KeyboardInterrupt:
         pass

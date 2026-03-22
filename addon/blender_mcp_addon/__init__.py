@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Blender addon that provides an MCP socket server.
+Blender add-on that provides an MCP socket bridge-server.
 """
 
 __all__ = (
@@ -12,14 +12,15 @@ __all__ = (
 )
 
 import bpy  # pylint: disable=import-error
-from bpy.props import BoolProperty, FloatProperty, IntProperty, StringProperty  # pylint: disable=import-error
+from bpy.props import (
+    BoolProperty,
+    FloatProperty,
+    IntProperty,
+    StringProperty,
+)  # pylint: disable=import-error
 
-from . import execute_interactive
-from . import mcp_to_blender_server as server
+from . import mcp_to_blender_server
 
-# Defaults used for preferences.
-_DEFAULT_HOST = "localhost"
-_DEFAULT_PORT = 9876
 _PORT_MIN = 1024
 _PORT_MAX = 65535
 
@@ -27,11 +28,13 @@ _PORT_MAX = 65535
 # Avoids adding work to Blender's startup sequence.
 _AUTOSTART_DELAY = 1.0
 
-# Store CLI only for correct register/unregister.
+# Store the CLI handle, only for correct register/unregister.
 _cli_commands: list[object] = []
 
 # This error is shown in the UI & command line when online access isn't enabled.
-# NOTE(@ideasman42): we could consider `localhost` to be acceptable, this is a slightly grey area.
+#
+# NOTE(@ideasman42): we could consider `localhost` to be acceptable, this is a grey area
+# regarding what counts as "online" or not.
 _state_offline_error_message = "Online access must be enabled in the system preferences"
 
 
@@ -40,6 +43,7 @@ class _State:
     Module-level runtime state that is not persisted across sessions.
     """
 
+    # Communicate to the user if there is a problem.
     # Displayed in the preferences UI when non-empty.
     autostart_error: str = ""
 
@@ -74,13 +78,22 @@ def _state_startup_online_ok_or_error() -> bool:
 class _BlenderMCPPreferences(bpy.types.AddonPreferences):  # type: ignore[misc]
     bl_idname = __package__
 
-    host: StringProperty(name="Host", default=_DEFAULT_HOST)  # type: ignore[valid-type]
-    port: IntProperty(name="Port", default=_DEFAULT_PORT, min=_PORT_MIN, max=_PORT_MAX)  # type: ignore[valid-type]
+    host: StringProperty(  # type: ignore[valid-type]
+        name="Host",
+        default=mcp_to_blender_server.DEFAULT_HOST,
+    )
+    port: IntProperty(  # type: ignore[valid-type]
+        name="Port",
+        default=mcp_to_blender_server.DEFAULT_PORT,
+        min=_PORT_MIN,
+        max=_PORT_MAX,
+    )
     use_autostart: BoolProperty(  # type: ignore[valid-type]
         name="Auto Start",
         description=(
             "Automatically start the MCP bridge server when Blender starts.\n"
-            "(Not used in background mode)"
+            "Without this, you must manually start from the preferences UI.\n"
+            "(ignored in background mode)"
         ),
         default=True,
     )
@@ -88,7 +101,7 @@ class _BlenderMCPPreferences(bpy.types.AddonPreferences):  # type: ignore[misc]
         name="Auto Start Delay",
         description=(
             "Seconds to wait after Blender starts before auto-starting the server.\n"
-            "Avoids adding work to Blender's startup sequence"
+            "Avoids adding overhead to Blender's startup sequence"
         ),
         default=_AUTOSTART_DELAY,
         min=0.0,
@@ -99,7 +112,7 @@ class _BlenderMCPPreferences(bpy.types.AddonPreferences):  # type: ignore[misc]
     )
 
     def _update_use_log(self, _context: bpy.types.Context) -> None:
-        server.use_log = self.use_log
+        mcp_to_blender_server.use_log = self.use_log
 
     use_log: BoolProperty(  # type: ignore[valid-type]
         name="Log",
@@ -111,7 +124,7 @@ class _BlenderMCPPreferences(bpy.types.AddonPreferences):  # type: ignore[misc]
     def _update_timer_interval_active(self, _context: bpy.types.Context) -> None:
         # Cached on the server module because the timer callback may fire
         # many times a second, avoid slower preferences lookups.
-        server.timer_internal_vars_calc(active=self.timer_interval_active)
+        mcp_to_blender_server.timer_internal_vars_calc(active=self.timer_interval_active)
 
     timer_interval_active: FloatProperty(  # type: ignore[valid-type]
         name="Timer Interval",
@@ -121,14 +134,14 @@ class _BlenderMCPPreferences(bpy.types.AddonPreferences):  # type: ignore[misc]
         max=5.0,
         step=1,
         precision=2,
-        subtype="TIME_ABSOLUTE",
+        subtype='TIME_ABSOLUTE',
         update=_update_timer_interval_active,
     )
 
     def _update_timer_interval_idle(self, _context: bpy.types.Context) -> None:
         # Cached on the server module because the timer callback may fire
         # many times a second, avoid slower preferences lookups.
-        server.timer_internal_vars_calc(idle=self.timer_interval_idle)
+        mcp_to_blender_server.timer_internal_vars_calc(idle=self.timer_interval_idle)
 
     timer_interval_idle: FloatProperty(  # type: ignore[valid-type]
         name="Timer Interval Idle",
@@ -138,14 +151,14 @@ class _BlenderMCPPreferences(bpy.types.AddonPreferences):  # type: ignore[misc]
         max=10.0,
         step=10,
         precision=2,
-        subtype="TIME_ABSOLUTE",
+        subtype='TIME_ABSOLUTE',
         update=_update_timer_interval_idle,
     )
 
     def _update_timer_interval_idle_delay(self, _context: bpy.types.Context) -> None:
         # Cached on the server module because the timer callback may fire
         # many times a second, avoid slower preferences lookups.
-        server.timer_internal_vars_calc(idle_delay=self.timer_interval_idle_delay)
+        mcp_to_blender_server.timer_internal_vars_calc(idle_delay=self.timer_interval_idle_delay)
 
     timer_interval_idle_delay: FloatProperty(  # type: ignore[valid-type]
         name="Idle Delay",
@@ -155,7 +168,7 @@ class _BlenderMCPPreferences(bpy.types.AddonPreferences):  # type: ignore[misc]
         max=60.0,
         step=100,
         precision=1,
-        subtype="TIME_ABSOLUTE",
+        subtype='TIME_ABSOLUTE',
         update=_update_timer_interval_idle_delay,
     )
 
@@ -171,7 +184,7 @@ class _BlenderMCPPreferences(bpy.types.AddonPreferences):  # type: ignore[misc]
         layout.prop(self, "timer_interval_idle_delay")
         layout.prop(self, "use_log")
 
-        if server.is_running():
+        if mcp_to_blender_server.is_running():
             layout.operator("blmcp.server_stop", icon="CANCEL")
             layout.label(text="Server is running", icon="CHECKMARK")
         else:
@@ -188,6 +201,8 @@ class _BLMCP_OT_server_start(bpy.types.Operator):  # type: ignore[misc]
     bl_description = "Start the MCP socket bridge server that the MCP server can connect to"
 
     def execute(self, context: bpy.types.Context) -> set[str]:
+        from . import execute_interactive
+
         # Timers do not fire in background mode. Use the CLI command instead:
         # `blender --background file.blend --command blender_mcp`.
         if bpy.app.background:
@@ -196,22 +211,25 @@ class _BLMCP_OT_server_start(bpy.types.Operator):  # type: ignore[misc]
         if not _state_startup_online_ok_or_error():
             self.report({"ERROR"}, _state_offline_error_message)
             return {"CANCELLED"}
-        # Clear any stale autostart error so it does not persist in the UI.
+        # Clear any stale auto-start error so it does not persist in the UI.
         _state_startup_info_clear()
         prefs = context.preferences.addons[__package__].preferences
-        server.timer_internal_vars_calc(
+        mcp_to_blender_server.timer_internal_vars_calc(
             active=prefs.timer_interval_active,
             idle=prefs.timer_interval_idle,
             idle_delay=prefs.timer_interval_idle_delay,
         )
-        server.use_log = prefs.use_log
+        mcp_to_blender_server.use_log = prefs.use_log
         try:
-            server.start(prefs.host, prefs.port)
+            mcp_to_blender_server.start(prefs.host, prefs.port)
         except Exception as ex:  # pylint: disable=broad-exception-caught
             _state_startup_info_set(str(ex))
             self.report({"ERROR"}, str(ex))
             return {"CANCELLED"}
-        bpy.app.timers.register(execute_interactive.run, first_interval=server.TIMER_INTERVAL_ACTIVE, persistent=True)
+        bpy.app.timers.register(
+            execute_interactive.run,
+            first_interval=mcp_to_blender_server.TIMER_INTERVAL_ACTIVE,
+            persistent=True)
         self.report({"INFO"}, "MCP server started on {:s}:{:d}".format(prefs.host, prefs.port))
         return {"FINISHED"}
 
@@ -223,9 +241,11 @@ class _BLMCP_OT_server_stop(bpy.types.Operator):  # type: ignore[misc]
 
     def execute(self, context: bpy.types.Context) -> set[str]:
         del context
-        # Clear any stale autostart error so it does not persist in the UI.
+        from . import execute_interactive
+
+        # Clear any stale auto-start error so it does not persist in the UI.
         _state_startup_info_clear()
-        server.stop()
+        mcp_to_blender_server.stop()
         if bpy.app.timers.is_registered(execute_interactive.run):
             bpy.app.timers.unregister(execute_interactive.run)
         self.report({"INFO"}, "MCP bridge server stopped")
@@ -237,23 +257,36 @@ def _autostart_timer() -> None:
     Deferred timer callback that starts the server when ``use_autostart``
     is enabled. Runs after a delay to avoid slowing down Blender's startup.
     """
+    from . import execute_interactive
+
     if not _state_startup_online_ok_or_error():
         return
     prefs = bpy.context.preferences.addons[__package__].preferences
-    server.timer_internal_vars_calc(
+    mcp_to_blender_server.timer_internal_vars_calc(
         active=prefs.timer_interval_active,
         idle=prefs.timer_interval_idle,
         idle_delay=prefs.timer_interval_idle_delay,
     )
-    server.use_log = prefs.use_log
-    if server.is_running():
+    mcp_to_blender_server.use_log = prefs.use_log
+
+    # This isn't expected:
+    # - Maybe the operator is explicitly called as part of an automated action.
+    # - The user might have set a very long delay for initial startup and
+    #   manually enabled before the timer fires.
+    # Whatever the case, running multiple servers would cause confusing errors, so don't do it.
+    if mcp_to_blender_server.is_running():
         return
+
     try:
-        server.start(prefs.host, prefs.port)
+        mcp_to_blender_server.start(prefs.host, prefs.port)
     except Exception as ex:  # pylint: disable=broad-exception-caught
         _state_startup_info_set(str(ex))
         return
-    bpy.app.timers.register(execute_interactive.run, first_interval=server.TIMER_INTERVAL_ACTIVE, persistent=True)
+
+    bpy.app.timers.register(
+        execute_interactive.run,
+        first_interval=mcp_to_blender_server.TIMER_INTERVAL_ACTIVE,
+        persistent=True)
 
 
 def _cli_execute_handler(argv: list[str]) -> int:
@@ -293,6 +326,8 @@ def register() -> None:
 
 
 def unregister() -> None:
+    from . import execute_interactive
+
     for cmd in _cli_commands:
         bpy.utils.unregister_cli_command(cmd)
     _cli_commands.clear()
@@ -300,7 +335,7 @@ def unregister() -> None:
     if bpy.app.timers.is_registered(_autostart_timer):
         bpy.app.timers.unregister(_autostart_timer)
 
-    server.stop()
+    mcp_to_blender_server.stop()
     if bpy.app.timers.is_registered(execute_interactive.run):
         bpy.app.timers.unregister(execute_interactive.run)
     for cls in reversed(_classes):

@@ -5,16 +5,17 @@
 """
 Deferred response handling for Blender background jobs.
 
-When toolcode starts a background job (e.g. rendering with
+When tool-code starts a background job (e.g. rendering with
 ``INVOKE_DEFAULT``), the response cannot be sent immediately. This
 module holds the client connection open and polls a checker callable
 until the operation completes, then sends the result.
 
 The checker (``check_fn``) is called on the server's standard timer
-which starts at an active interval but backs off when idle. Checkers
-should be lightweight (e.g. check a flag or file existence) so they
-don't block the UI, yet return promptly so the user is not left
-waiting after the job finishes.
+which starts at an active interval but backs off when idle.
+
+Checkers should be lightweight (e.g. check a flag or file existence)
+so they don't block the UI, yet return promptly so the user is not left waiting after the job finishes.
+
 """
 
 __all__ = (
@@ -36,8 +37,7 @@ from .mcp_to_blender_server import _encode_response
 # When exceeded, an error response is sent and the connection is closed.
 # The background task itself continues to run in Blender.
 # One hour is long for what should typically be an interactive experience,
-# but renders can take a long time and it's not desirable for them to
-# simply give up.
+# but renders can take a long time and it's not desirable for them to simply give up.
 _DEFERRED_TIMEOUT = (60.0 * 60.0)
 
 
@@ -71,6 +71,7 @@ class _DeferredClient:
         self.deadline: float = time.monotonic() + _DEFERRED_TIMEOUT
 
 
+# Connections waiting for a background job to finish, polled each timer tick.
 _deferred_clients: list[_DeferredClient] = []
 
 

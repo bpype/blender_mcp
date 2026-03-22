@@ -6,14 +6,14 @@
 Interactive timer-based execution for the MCP server.
 
 Polls client connections via ``bpy.app.timers`` so that requests are
-handled in Blender's main thread during normal interactive sessions.
+handled in Blender's main loop during normal interactive sessions.
 """
 
 __all__ = (
     "run",
 )
 
-from . import mcp_to_blender_server as server
+from . import mcp_to_blender_server
 
 
 def run() -> float | None:
@@ -26,7 +26,7 @@ def run() -> float | None:
     # While errors *should* never happen: without exception handling here,
     # any error would remove the timer - effectively breaking the add-on.
     try:
-        did_work = server.poll()
+        did_work = mcp_to_blender_server.poll()
     except Exception:  # pylint: disable=broad-exception-caught
         import traceback
         import sys
@@ -39,10 +39,10 @@ def run() -> float | None:
         # This is undefined, set to true so we reset the timer.
         did_work = True
 
-    if not server.is_running():
+    if not mcp_to_blender_server.is_running():
         return None
 
     if did_work:
-        server.timer_idle_reset()
+        mcp_to_blender_server.timer_idle_reset()
 
-    return server.timer_idle_interval()
+    return mcp_to_blender_server.timer_idle_interval()

@@ -15,10 +15,7 @@ __all__ = (
 import argparse
 
 from . import execute_blocking
-from . import mcp_to_blender_server as server
-
-_DEFAULT_HOST = "localhost"
-_DEFAULT_PORT = 9876
+from . import mcp_to_blender_server
 
 
 def cli_execute(argv: list[str]) -> int:
@@ -29,21 +26,25 @@ def cli_execute(argv: list[str]) -> int:
         prog="blender_mcp",
         description=(
             "Start the Blender MCP server. "
-            "Intended for background mode but also works with a GUI, "
-            "although Blender will be unresponsive to user input until the server exits. "
             "Deferred responses are not supported in background mode; "
             "each request must complete before returning."
         ),
     )
-    parser.add_argument("--host", default=_DEFAULT_HOST, help="Host to bind to.")
     parser.add_argument(
-        "--port", type=int, default=_DEFAULT_PORT,
+        "--host",
+        default=mcp_to_blender_server.DEFAULT_HOST,
+        help="Host to bind to.",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=mcp_to_blender_server.DEFAULT_PORT,
         help="Port to listen on.",
     )
     args = parser.parse_args(argv)
 
     try:
-        server.start(args.host, args.port)
+        mcp_to_blender_server.start(args.host, args.port)
     except Exception as ex:  # pylint: disable=broad-exception-caught
         print("Error: {:s}".format(str(ex)))
         return 1
@@ -53,5 +54,5 @@ def cli_execute(argv: list[str]) -> int:
     try:
         execute_blocking.run()
     finally:
-        server.stop()
+        mcp_to_blender_server.stop()
     return 0

@@ -12,6 +12,8 @@ Blender's main thread.
 """
 
 __all__ = (
+    "DEFAULT_HOST",
+    "DEFAULT_PORT",
     "TIMER_INTERVAL_ACTIVE",
     "is_running",
     "poll",
@@ -33,6 +35,9 @@ import traceback
 from collections.abc import Callable
 from typing import NamedTuple
 
+DEFAULT_HOST = "localhost"
+DEFAULT_PORT = 9876
+
 # Seconds between main-thread timer ticks.
 TIMER_INTERVAL_ACTIVE = 0.05
 # Seconds between main-thread timer ticks while idle (no pending work).
@@ -44,6 +49,8 @@ _TIMER_INTERVAL_IDLE_DELAY = 5.0
 class _TimerState:
     """
     Mutable singleton holding timer-related runtime state.
+
+    This is manipulated from the preferences and updated via ``timer_internal_vars_calc``.
     """
 
     __slots__ = (
@@ -114,7 +121,7 @@ def timer_idle_interval() -> float:
     return _timer.interval_idle
 
 
-# When True, print every request and response status to stderr.
+# When True, print every request and response status to STDERR.
 use_log: bool = False
 
 _MAX_REQUEST_BYTES = 10 * 1024 * 1024  # 10 MiB.
@@ -139,7 +146,7 @@ timer_internal_vars_calc()
 
 class _Client:
     """
-    Per-connection state for a client that has not yet sent a complete request.
+    Per-connection state for a client (the MCP server process) that has not yet sent a complete request.
     """
 
     __slots__ = (
@@ -161,7 +168,7 @@ class _Client:
 
 class _State:
     """
-    Mutable singleton holding the server's runtime state.
+    Mutable singleton holding the runtime state of this socket server (the Blender add-on side).
     """
 
     __slots__ = (
@@ -275,7 +282,7 @@ def _execute_code(
     return _ExecResult(response)
 
 
-def _handle_request(
+def _execute_code_from_request(
         data: bytes,
 ) -> tuple[_ExecResult, bool]:
     """
@@ -375,7 +382,10 @@ def _service_clients() -> bool:
         client.timeout -= 1
         if client.timeout <= 0:
             try:
-                err: dict[str, object] = {"status": "error", "message": "Client timed out"}
+                err: dict[str, object] = {
+                    "status": "error",
+                    "message": "Client timed out",
+                }
                 client.conn.sendall(_encode_response(err))
             except OSError:
                 pass
@@ -418,7 +428,7 @@ def _service_clients() -> bool:
         # Execute the request and send the response.
         request_data = bytes(client.buffer[:client.buffer.index(b"\0")])
         try:
-            exec_result, strict_json = _handle_request(request_data)
+            exec_result, strict_json = _execute_code_from_request(request_data)
         except Exception:  # pylint: disable=broad-exception-caught
             exec_result = _ExecResult({"status": "error", "message": traceback.format_exc()})
             strict_json = False
@@ -492,7 +502,7 @@ def _handle_blocking_client(conn: socket.socket) -> bool:
 
         request_data = bytes(buf[:buf.index(b"\0")])
         try:
-            exec_result, _strict_json = _handle_request(request_data)
+            exec_result, _strict_json = _execute_code_from_request(request_data)
             if exec_result.check_fn is not None:
                 # Unpack to preserve stdout/stderr captured before the deferred handler was set up.
                 response = {**exec_result.response, "status": "error", "message": _DEFERRED_UNSUPPORTED_MESSAGE}
