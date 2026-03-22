@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Toolcode for focusing the 3D viewport on an object's data block.
+Tool-code for focusing the 3D viewport on an object's data block.
 """
 
 __all__ = (

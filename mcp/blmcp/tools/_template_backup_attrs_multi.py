@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+# Inline `_backup_attrs_multi`.
+
 __all__ = ()
 
 import contextlib

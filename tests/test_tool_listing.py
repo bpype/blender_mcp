@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Verify the MCP server exposes expected tools.
+Checks that the MCP server exposes the expected tool listing.
 """
 
 __all__ = ()
@@ -468,8 +468,10 @@ EXPECTED_TOOLS = [
 
 def _list_tools() -> list[dict[str, object]]:
     """
-    Start the MCP server and return the full tool listing.
+    Starts the MCP server and returns the full tool listing.
     """
+
+    # Async is required because the MCP client SDK is async-only.
     async def _run() -> list[dict[str, object]]:
         env = os.environ.copy()
         env["PYTHONPATH"] = os.path.join(_REPO_DIR, "mcp")
@@ -490,10 +492,14 @@ def _list_tools() -> list[dict[str, object]]:
                     }
                     for t in result.tools
                 ]
+
     return asyncio.run(_run())
 
 
 class TestToolListing(unittest.TestCase):
+    """
+    Checks that the live tool listing matches the frozen snapshot.
+    """
 
     _tools: list[dict[str, object]]
 
@@ -502,26 +508,33 @@ class TestToolListing(unittest.TestCase):
         cls._tools = _list_tools()
 
     def test_tools_match_expected(self) -> None:
+        """
+        Checks that the live tool listing exactly matches ``EXPECTED_TOOLS``.
+        """
         self.assertEqual(self._tools, EXPECTED_TOOLS)
 
 
 def _update_expected_tools() -> None:
     """
-    Re-generate the EXPECTED_TOOLS block in this file from a live server query.
-    With out this updating the test is tedious!
+    Re-generates the ``EXPECTED_TOOLS`` block from a live server query.
     """
     import json
     import subprocess
+
     filepath = os.path.abspath(__file__)
     with open(filepath, "r", encoding="utf-8") as fh:
         source = fh.read()
     begin = source.index("# BEGIN: EXPECTED_TOOLS\n") + len("# BEGIN: EXPECTED_TOOLS\n")
     end = source.index("# END: EXPECTED_TOOLS\n")
     formatted = json.dumps(_list_tools(), indent=4)
-    formatted = formatted.replace(": true", ": True").replace(": false", ": False").replace(": null", ": None")
-    formatted = formatted.replace("\\n", "\\n\"\n\"")
+    formatted = (
+        formatted.replace(": true", ": True")
+        .replace(": false", ": False")
+        .replace(": null", ": None")
+    )
+    formatted = formatted.replace("\\n", '\\n"\n"')
     # Also handles the `\n"` case (no trailing empty string).
-    formatted = formatted.replace("\\n\"\n\"\"", "\\n\"")
+    formatted = formatted.replace('\\n"\n""', '\\n"')
     formatted = "EXPECTED_TOOLS = " + formatted + "\n"
     with open(filepath, "w", encoding="utf-8") as fh:
         fh.write(source[:begin] + formatted + source[end:])

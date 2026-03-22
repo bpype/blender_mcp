@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Toolcode for rendering the current scene.
+Tool-code for rendering the current scene.
 """
 
 __all__ = (
@@ -48,8 +48,8 @@ def main(params: Params) -> Result | Callable[[], dict[str, object] | None]:
     scene = bpy.context.scene
 
     # NOTE: `filepath` is set manually (not via context manager) because
-    # `write_still` reads it after the render completes. With
-    # `INVOKE_DEFAULT` a context manager would restore it too early.
+    # `write_still` reads it after the render completes.
+    # With `INVOKE_DEFAULT` a context manager would restore it too early.
     rd = scene.render
     orig_filepath = rd.filepath
     rd.filepath = output_path

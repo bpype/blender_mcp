@@ -4,6 +4,9 @@
 
 """
 MCP server for Blender.
+
+Provides tools for LLM's, connecting to Blender via a bridge-server.
+All tools send code to the add-on to run.
 """
 
 __all__ = (
@@ -18,6 +21,10 @@ import pkgutil
 import yaml
 from mcp.server.fastmcp import FastMCP  # pylint: disable=import-error,no-name-in-module
 
+# NOTE(@ideasman42): this was written to support LLAMA-C++'s Web UI,
+# which is one of the nicer ways to run this locally.
+# It is not full HTTP support because there looks to be many options for this protocol.
+# This could be disabled if it no longer serves its purpose - as most agents wont use STDIO.
 _USE_HTTP_SUPPORT = True
 
 _TRANSPORTS = ("stdio", *(("http",) if _USE_HTTP_SUPPORT else ()))

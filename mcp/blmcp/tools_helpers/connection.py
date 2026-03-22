@@ -3,7 +3,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Socket client for communicating with the Blender addon.
+Socket client for communicating with the Blender add-on.
+
+Used by MCP "tools" that send-code to the Blender add-on.
 """
 
 __all__ = (
@@ -29,9 +31,9 @@ def get_connection_params() -> tuple[str, int]:
 
 def send_code(code: str, strict_json: bool) -> dict[str, object]:
     """
-    Send Python code to the Blender addon socket server for execution.
+    Send Python code to the Blender add-on socket server for execution.
 
-    Returns the full response dict from the addon containing
+    Returns the full response dict from the add-on containing
     ``status`` (``"ok"`` or ``"error"``), ``result`` (on success),
     ``message`` (on error), and optionally ``stdout``/``stderr``
     captured during execution.

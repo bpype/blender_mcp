@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Toolcode for linked library tree.
+Tool-code for linked library tree.
 """
 
 __all__ = (

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Toolcode for blend file path, save status, age, and backups.
+Tool-code for blend file path, save status, age, and backups.
 """
 
 __all__ = (

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Toolcode for data-block counts, active workspace, and render engine.
+Tool-code for data-block counts, active workspace, and render engine.
 """
 
 __all__ = (

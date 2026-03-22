@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+# Inline `_image_downscale_to_size_limit`.
+
 __all__ = ()
 
 

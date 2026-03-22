@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Toolcode for returning a tree of collections and their objects.
+Tool-code for returning a tree of collections and their objects.
 """
 
 __all__ = (

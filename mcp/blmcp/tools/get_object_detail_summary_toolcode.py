@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Toolcode for returning structured detail about a single object.
+Tool-code for returning structured detail about a single object.
 """
 
 __all__ = (

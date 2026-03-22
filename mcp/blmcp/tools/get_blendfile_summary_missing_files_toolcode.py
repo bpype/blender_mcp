@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Toolcode for reporting missing external file references.
+Tool-code for reporting missing external file references.
 """
 
 __all__ = (

@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+# Inline `_deferred_tool_check_for_file_output`.
+
 __all__ = ()
 
 import os

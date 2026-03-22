@@ -31,9 +31,11 @@ def toolcode_load_from_filepath(filepath: str) -> str:
     Given ``/path/to/tools/my_tool.py``, returns the contents of
     ``/path/to/tools/my_tool_toolcode.py``.
 
-    Blocks delimited by ``# @include_begin: _template_foo.py`` and
-    ``# @include_end`` are replaced with the contents of the referenced
-    file (resolved relative to the toolcode file's directory).
+    Simple templating is supported:
+    Blocks delimited by
+    ``# @include_begin: _template_foo.py`` and
+    ``# @include_end`` are replaced with the contents of the referenced file
+    (resolved relative to the tool-code file's directory).
     """
     base, ext = os.path.splitext(filepath)
     toolcode_path = base + "_toolcode" + ext

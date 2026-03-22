@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Toolcode for guessing blend file use-cases.
+Tool-code for guessing blend file use-cases.
 """
 
 __all__ = (

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Toolcode for switching workspace tabs by name.
+Tool-code for switching workspace tabs by name.
 """
 
 __all__ = (

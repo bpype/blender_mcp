@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Run toolcode via ``blender --background``.
+Run tool-code via ``blender --background``.
 """
 
 __all__ = (
@@ -43,7 +43,7 @@ def run_blender_cli(
     *blend_file* is the path to the ``.blend`` file to open.
     *code* is executed via ``exec()`` and should assign to ``result``.
 
-    Returns the JSON-deserialised ``result`` value.
+    Returns the JSON-de-serialized ``result`` value.
     """
     blender = _get_blender_path()
 
@@ -137,7 +137,7 @@ def synced_blend_for_cli(blend_file: str) -> Generator[str, None, None]:
         is_dirty = result.get("is_dirty", False)
         blender_filepath = str(result.get("filepath", ""))
 
-        # Compare normalised paths to see if this is the same file.
+        # Compare normalized paths to see if this is the same file.
         if (
             not blender_filepath
             or os.path.realpath(blend_file) != os.path.realpath(blender_filepath)

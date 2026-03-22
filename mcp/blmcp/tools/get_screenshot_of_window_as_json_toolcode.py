@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Toolcode for JSON window layout description.
+Tool-code for JSON window layout description.
 """
 
 __all__ = (

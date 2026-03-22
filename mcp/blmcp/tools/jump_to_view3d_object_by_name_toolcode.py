@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Toolcode for focusing the 3D viewport on an object.
+Tool-code for focusing the 3D viewport on an object.
 """
 
 __all__ = (

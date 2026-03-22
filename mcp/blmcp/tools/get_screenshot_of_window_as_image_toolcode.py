@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Toolcode for capturing a window screenshot as PNG.
+Tool-code for capturing a window screenshot as PNG.
 """
 
 __all__ = (

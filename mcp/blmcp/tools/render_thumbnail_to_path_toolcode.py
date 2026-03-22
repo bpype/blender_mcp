@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Toolcode for low-quality thumbnail rendering.
+Tool-code for low-quality thumbnail rendering.
 """
 
 __all__ = (
