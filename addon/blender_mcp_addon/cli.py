@@ -44,7 +44,7 @@ def cli_execute(argv: list[str]) -> int:
 
     try:
         server.start(args.host, args.port)
-    except RuntimeError as ex:
+    except Exception as ex:  # pylint: disable=broad-exception-caught
         print("Error: {:s}".format(str(ex)))
         return 1
 

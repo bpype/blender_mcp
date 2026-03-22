@@ -525,6 +525,12 @@ def start(host: str, port: int) -> None:
     This does not block. The caller must arrange for ``poll`` to be
     called periodically (see ``execute_interactive`` and
     ``execute_blocking``).
+
+    Callers should catch ``Exception`` broadly rather than specific types,
+    since failures may be:
+    - ``RuntimeError``, e.g. server already running.
+    - ``OSError``, e.g. address already in use.
+    ...other exceptions that are difficult to predict exhaustively.
     """
     if is_running():
         raise RuntimeError("Server is already running")
