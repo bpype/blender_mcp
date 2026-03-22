@@ -21,6 +21,8 @@ def register(mcp: FastMCP) -> None:
 
         The code runs in Blender's Python environment with full access to ``bpy``.
         To return data, assign a JSON-serialisable dict to a variable named ``result``.
+        Deferred completion via ``check_is_finished`` is only supported by the
+        interactive addon server, and is rejected in background mode.
         """
         # Not strict: LLM-generated code may return non-JSON-serializable values
         # (e.g. Blender objects). Use `repr` as a fallback instead of erroring.

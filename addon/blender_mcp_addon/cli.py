@@ -30,7 +30,9 @@ def cli_execute(argv: list[str]) -> int:
         description=(
             "Start the Blender MCP server. "
             "Intended for background mode but also works with a GUI, "
-            "although Blender will be unresponsive to user input until the server exits."
+            "although Blender will be unresponsive to user input until the server exits. "
+            "Deferred responses are not supported in background mode; "
+            "each request must complete before returning."
         ),
     )
     parser.add_argument("--host", default=_DEFAULT_HOST, help="Host to bind to.")

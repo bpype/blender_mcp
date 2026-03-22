@@ -31,7 +31,9 @@ EXPECTED_TOOLS = [
         "Execute Python code in the connected Blender instance.\n"
         "\n"
         "The code runs in Blender's Python environment with full access to ``bpy``.\n"
-        "To return data, assign a JSON-serialisable dict to a variable named ``result``.\n",
+        "To return data, assign a JSON-serialisable dict to a variable named ``result``.\n"
+        "Deferred completion via ``check_is_finished`` is only supported by the\n"
+        "interactive addon server, and is rejected in background mode.\n",
         "inputSchema": {
             "properties": {
                 "code": {

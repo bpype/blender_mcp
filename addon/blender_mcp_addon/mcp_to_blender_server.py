@@ -125,6 +125,11 @@ _RECV_BUFFER_SIZE = 4096
 _CLIENT_TIMEOUT = 10.0
 # How often `poll_blocking` checks for shutdown.
 _POLL_BLOCKING_TIMEOUT = 1.0
+_DEFERRED_UNSUPPORTED_MESSAGE = (
+    "Deferred responses via `check_is_finished` are only supported "
+    "by the interactive addon server, and are not available in "
+    "background mode. Finish the request synchronously instead."
+)
 
 timer_internal_vars_calc()
 
@@ -462,6 +467,10 @@ def _handle_blocking_client(conn: socket.socket) -> bool:
         request_data = bytes(buf[:buf.index(b"\0")])
         try:
             exec_result, _strict_json = _handle_request(request_data)
+            if exec_result.check_fn is not None:
+                # Unpack to preserve stdout/stderr captured before the deferred handler was set up.
+                response = {**exec_result.response, "status": "error", "message": _DEFERRED_UNSUPPORTED_MESSAGE}
+                exec_result = _ExecResult(response)
         except Exception:  # pylint: disable=broad-exception-caught
             exec_result = _ExecResult({"status": "error", "message": traceback.format_exc()})
         conn.sendall(_encode_response(exec_result.response))

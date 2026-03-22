@@ -48,6 +48,8 @@ Connectivity
    - Configurable polling intervals (active and idle rates) from preferences to avoid excessive overhead.
    - Client timeout protection - stalled connections are evicted.
    - Start/stop operators accessible from the preferences panel.
+   - Deferred responses are supported only by the interactive add-on server;
+     background mode requires requests to complete synchronously and rejects deferred results.
 
 
 

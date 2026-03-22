@@ -784,8 +784,7 @@ class _TestServerMixin:
         """Synthetic test for the deferred response mechanism, not a real tool."""
         if not self._interactive:
             # Deferred responses only apply to interactive (timer-based) mode.
-            # In background/command modes, bpy.app.background is True and
-            # operations run synchronously.
+            # Background mode rejects them explicitly.
             return
 
         # Send code that sets check_is_finished. The deferred response
@@ -803,6 +802,24 @@ class _TestServerMixin:
         })
         self.assertTrue(data["deferred"])
         self.assertEqual(data["value"], 42)
+
+    def test_deferred_tool_response_blocking_mode_error(self) -> None:
+        """Synthetic test: blocking server modes reject deferred responses clearly."""
+        if self._interactive:
+            return
+
+        def deferred_code() -> None:
+            def check_is_finished():  # noqa: F841 (read by the exec namespace)
+                return {'deferred': True, 'value': 42}
+            result = {}  # noqa: F841
+        data = self._test_tool("execute_blender_code", {
+            "code": _python_fn_body_as_string(deferred_code),
+        })
+        self.assertEqual(data["status"], "error")
+        self.assertIn(
+            "Deferred responses via `check_is_finished` are only supported by the interactive addon server",
+            data["message"],
+        )
 
     def test_deferred_tool_render(self) -> None:
         """Test the deferred path with a real render of a non-trivial scene."""
