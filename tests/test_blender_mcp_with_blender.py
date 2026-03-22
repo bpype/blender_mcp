@@ -792,6 +792,7 @@ class _TestServerMixin:
         def deferred_code() -> None:
             import time
             deadline = time.monotonic() + 0.3
+
             def check_is_finished():  # noqa: F841 (read by the exec namespace)
                 if time.monotonic() < deadline:
                     return None
