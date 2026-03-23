@@ -629,7 +629,7 @@ class TestChatClient(unittest.TestCase):
         # Start Blender (graphical, no --background)
         with _StatusReport("Starting Blender") as st:
             cls._blender_proc = subprocess.Popen(
-                [blender_bin, "--online-mode"],
+                [blender_bin, "--online-mode", "--gpu-backend", "vulkan"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 env=env,
