@@ -707,22 +707,34 @@ class _TestServerMixin:
 
     def test_jump_to_tab_by_name(self) -> None:
         data = self._test_tool("jump_to_tab_by_name", {"name": "Layout"})
+        if not self._interactive:
+            self.assertEqual(data["status"], "error")
+            return
         self.assertEqual(data["status"], "ok")
         self.assertEqual(data["workspace"], "Layout")
 
     def test_jump_to_tab_by_space_type(self) -> None:
         data = self._test_tool("jump_to_tab_by_space_type", {"space_type": "VIEW_3D"})
+        if not self._interactive:
+            self.assertEqual(data["status"], "error")
+            return
         self.assertEqual(data["status"], "ok")
         self.assertEqual(data["space_type"], "VIEW_3D")
 
     def test_jump_to_view3d_object_by_name(self) -> None:
         data = self._test_tool("jump_to_view3d_object_by_name", {"name": "Cube"})
+        if not self._interactive:
+            self.assertEqual(data["status"], "error")
+            return
         self.assertEqual(data["status"], "ok")
         self.assertEqual(data["object"], "Cube")
         self.assertEqual(data["type"], "MESH")
 
     def test_jump_to_view3d_object_data_by_name(self) -> None:
         data = self._test_tool("jump_to_view3d_object_data_by_name", {"name": "Cube"})
+        if not self._interactive:
+            self.assertEqual(data["status"], "error")
+            return
         self.assertEqual(data["status"], "ok")
         self.assertEqual(data["data_name"], "Cube")
         self.assertEqual(data["type"], "MESH")
@@ -928,6 +940,8 @@ class _TestServerMixin:
         )
 
     def test_jump_to_tab_by_name_error(self) -> None:
+        if not self._interactive:
+            return
         data = self._test_tool("jump_to_tab_by_name", {"name": "NonExistent"})
         self.assertEqual(data["status"], "error")
         self.assertIsInstance(data["available_workspaces"], list)
@@ -939,11 +953,15 @@ class _TestServerMixin:
         })
 
     def test_jump_to_view3d_object_by_name_error(self) -> None:
+        if not self._interactive:
+            return
         data = self._test_tool("jump_to_view3d_object_by_name", {"name": "NonExistent"})
         self.assertEqual(data["status"], "error")
         self.assertEqual(data["message"], "Object 'NonExistent' not found")
 
     def test_jump_to_view3d_object_data_by_name_error(self) -> None:
+        if not self._interactive:
+            return
         data = self._test_tool("jump_to_view3d_object_data_by_name", {"name": "NonExistent"})
         self.assertEqual(data["status"], "error")
         self.assertEqual(data["message"], "No object found with data named 'NonExistent'")
@@ -955,6 +973,8 @@ class _TestServerMixin:
         """
         Verify that ``allow_edits`` un-hides a hidden object.
         """
+        if not self._interactive:
+            return
         # Hide the default Cube.
         self._test_tool("execute_blender_code", {
             "code": (
@@ -982,6 +1002,8 @@ class _TestServerMixin:
         """
         Verify that ``allow_edits`` un-hides an object found by data name.
         """
+        if not self._interactive:
+            return
         # Hide the default Cube.
         self._test_tool("execute_blender_code", {
             "code": (
