@@ -14,14 +14,14 @@ import os
 import sys
 
 # Directories to scan.
-SCAN_DIRS = (
+_SCAN_DIRS = (
     os.path.join("mcp"),
     os.path.join("addon"),
     os.path.join("chat_client"),
 )
 
 # Directories to skip (relative to the repository root).
-SKIP_DIRS = (
+_SKIP_DIRS = (
     os.path.join("mcp", "blmcp", "data", "api"),
 )
 
@@ -34,11 +34,11 @@ def main() -> int:
 
     fail = 0
     count = 0
-    for scan_dir in SCAN_DIRS:
+    for scan_dir in _SCAN_DIRS:
         scan_dir_abs = os.path.join(repo_root, scan_dir)
         for dirpath, _dirnames, filenames in os.walk(scan_dir_abs):
             dirpath_rel = os.path.relpath(dirpath, repo_root)
-            if any(dirpath_rel == d or dirpath_rel.startswith(d + os.sep) for d in SKIP_DIRS):
+            if any(dirpath_rel == d or dirpath_rel.startswith(d + os.sep) for d in _SKIP_DIRS):
                 continue
             for filename in filenames:
                 if not filename.endswith(".py"):

@@ -25,6 +25,7 @@ import glob
 import http.server
 import inspect
 import json
+from typing import Any
 import os
 import shlex
 import signal
@@ -263,7 +264,7 @@ def _wait_for_health(
 
 def _blender_exec_for_internal_use_only(
     port: int, code: str, timeout: float = _TIMEOUT_LOCAL_PROC,
-) -> dict[str, object]:
+) -> dict[str, Any]:
     """
     Execute *code* in Blender via the addon's TCP socket server.
 
@@ -284,13 +285,13 @@ def _blender_exec_for_internal_use_only(
             if not chunk:
                 break
             buf.extend(chunk)
-    result: dict[str, object] = json.loads(bytes(buf.rstrip(b"\0")))
+    result: dict[str, Any] = json.loads(bytes(buf.rstrip(b"\0")))
     return result
 
 
 def _blender_exec_for_internal_use_only_ok_or_exception(
     port: int, code: str, timeout: float = _TIMEOUT_LOCAL_PROC,
-) -> dict[str, object]:
+) -> dict[str, Any]:
     """
     Like ``_blender_exec_for_internal_use_only`` but raises ``RuntimeError``
     when the response status is not ``ok``.
@@ -974,7 +975,7 @@ class TestChatClient(unittest.TestCase):
 
         def validate() -> bool:
             import bpy
-            from mathutils import Vector
+            from mathutils import Vector  # type: ignore[import-not-found]  # Blender-only module.
             dg = bpy.context.evaluated_depsgraph_get()
             body = bpy.data.objects['Body']
             rig = bpy.data.objects['Rig']
@@ -1017,7 +1018,7 @@ class TestChatClient(unittest.TestCase):
             * ``Fence`` -- manifold, has material, no absolute paths.
             * ``Chimney`` -- manifold, has material, no absolute paths.
             """
-            import bmesh
+            import bmesh  # type: ignore[import-not-found]  # Blender-only module.
             import bpy
 
             mat = bpy.data.materials.new('Default')

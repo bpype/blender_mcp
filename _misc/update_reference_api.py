@@ -18,7 +18,7 @@ import shutil
 import sys
 
 
-def rst_transform(dst_dir: str) -> None:
+def _rst_transform(dst_dir: str) -> None:
     """
     Post-process RST files in *dst_dir*, rewriting paths so
     ``literalinclude`` directives point to the co-located examples.
@@ -93,7 +93,7 @@ def main() -> int:
             shutil.copy2(src_file, dst_file)
             count += 1
 
-    rst_transform(dst_dir)
+    _rst_transform(dst_dir)
 
     print("Copied {:d} files to {:s}".format(count, dst_dir))
     return 0

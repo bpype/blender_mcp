@@ -78,6 +78,7 @@ def main(params: Params) -> Result:
         for ws in bpy.data.workspaces
         for screen in ws.screens
         for area in ((_largest_area(screen),) if _largest_area(screen) else ())
+        if area is not None
     })
     return Result(
         status="error",

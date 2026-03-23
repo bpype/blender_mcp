@@ -27,6 +27,7 @@ def main() -> None:
     sys.path.insert(0, ".")
     from tests.integration.test_blender_mcp_with_llm import TestChatClient
     for test in unittest.TestLoader().loadTestsFromTestCase(TestChatClient):
+        assert isinstance(test, unittest.TestCase)
         test_id = test.id()
         # `test.id()` returns e.g.
         # `tests.integration.test_blender_mcp_with_llm.TestChatClient.test_name`.
