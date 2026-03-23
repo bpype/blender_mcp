@@ -4,7 +4,7 @@
 export
 
 PYTHON ?= python
-PYTHON_SOURCE_DIRS_TO_CHECK = mcp/blmcp/ addon/blender_mcp_addon/ chat_client/
+PYTHON_SOURCE_DIRS_TO_CHECK = mcp/blmcp/ addon/blender_mcp_addon/ chat_client/ _misc/
 
 define HELP_TEXT
 
@@ -89,9 +89,7 @@ test:
 
 test_integration:
 ifdef TESTS_LIST
-	@$(PYTHON) -c "import unittest, sys; sys.path.insert(0, '.'); \
-	from tests.integration.test_blender_mcp_with_llm import TestChatClient; \
-	[print(t.id().rsplit('.', 1)[-2].split('.')[-1] + '.' + t.id().rsplit('.', 1)[-1]) for t in unittest.TestLoader().loadTestsFromTestCase(TestChatClient)]"
+	@$(PYTHON) _misc/test_integration_tests_list.py
 else
 	$(PYTHON) tests/integration/test_blender_mcp_with_llm.py $(TESTS)
 endif
@@ -106,7 +104,7 @@ check_ascii:
 	@$(PYTHON) _misc/check_ascii.py
 
 check_mypy:
-	@! $(PYTHON) -m mypy --exclude 'data/api/examples/' $(PYTHON_SOURCE_DIRS_TO_CHECK) _misc/ 2>&1 | grep -v '^stubs/' | grep ': error:' || \
+	@! $(PYTHON) -m mypy --exclude 'data/api/examples/' $(PYTHON_SOURCE_DIRS_TO_CHECK) 2>&1 | grep -v '^stubs/' | grep ': error:' || \
 		{ echo "mypy: found errors"; exit 1; }
 
 check_pylint:
