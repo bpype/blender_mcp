@@ -893,19 +893,32 @@ class TestChatClient(unittest.TestCase):
         Query which objects use a given material.
         """
         def setup() -> None:
-            """Create a material 'Red' and assign it to both 'Cube' and a new 'Sphere'."""
+            """Create a 'Cube' and 'Sphere' both sharing a material 'Red'."""
             import bpy
             mat = bpy.data.materials.new('Red')
-            bpy.data.objects['Cube'].data.materials.append(mat)
+            bpy.ops.mesh.primitive_cube_add()
+            bpy.context.object.name = 'Cube'
+            bpy.context.object.data.materials.append(mat)
             bpy.ops.mesh.primitive_uv_sphere_add()
             bpy.context.object.name = 'Sphere'
             bpy.context.object.data.materials.append(mat)
 
         self._setup_scene(setup)
-        _stdout = self._run_prompt(
-            "Which objects are using the material named 'Red'?"
+        self._run_prompt(
+            "Select all objects that use the material named 'Red'. "
+            "Do it immediately."
         )
-        # TODO: verify both 'Cube' and 'Sphere' appear in the output.
+
+        def validate() -> list[str]:
+            import bpy
+            return sorted(ob.name for ob in bpy.context.selected_objects)
+
+        selected = self._run_in_blender(validate)
+        self.assertEqual(
+            selected, ["Cube", "Sphere"],
+            "Expected only objects using the 'Red' material to be selected.\n"
+            + self._last_output_info,
+        )
 
     @unittest.skipUnless(use_llm_check(), use_llm_text)
     def test_usecase_scene_highest_polycount(self) -> None:
@@ -936,28 +949,6 @@ class TestChatClient(unittest.TestCase):
             "Expected only the high-poly object to be selected.\n"
             + self._last_output_info,
         )
-
-    @unittest.skipUnless(use_llm_check(), use_llm_text)
-    def test_usecase_suggest_descriptive_names(self) -> None:
-        """
-        Suggest descriptive names for generic mesh data-blocks.
-        """
-        def setup() -> None:
-            """Add a stretched cube, a sphere above it, and a thin cylinder below, all with generic names."""
-            import bpy
-            bpy.ops.mesh.primitive_cube_add(location=(0, 0, 0.5), scale=(2, 1, 1))
-            bpy.context.object.name = 'Cube'
-            bpy.ops.mesh.primitive_uv_sphere_add(location=(0, 0, 3))
-            bpy.context.object.name = 'Sphere'
-            bpy.ops.mesh.primitive_cylinder_add(location=(0, 0, -1), radius=0.2, depth=5)
-            bpy.context.object.name = 'Cylinder'
-
-        self._setup_scene(setup)
-        _stdout = self._run_prompt(
-            "Suggest descriptive names for all mesh data-blocks in the scene "
-            "and list the proposed changes."
-        )
-        # TODO: verify suggestions are present in output.
 
     @unittest.skipUnless(use_llm_check(), use_llm_text)
     def test_usecase_mesh_not_deformed_by_armature(self) -> None:
@@ -1000,98 +991,6 @@ class TestChatClient(unittest.TestCase):
             "Mesh 'Body' was not deformed by armature 'Rig' after posing.\n"
             + self._last_output_info,
         )
-
-    @unittest.skipUnless(use_llm_check(), use_llm_text)
-    def test_usecase_optimize_memory_for_render(self) -> None:
-        """
-        Suggest memory optimizations for a heavy render scene.
-        """
-        def setup() -> None:
-            """Set Cycles at 4K with 4096 samples and add five cubes with subdivision level 4 viewport / 6 render."""
-            import bpy
-            bpy.context.scene.render.engine = 'CYCLES'
-            bpy.context.scene.render.resolution_x = 3840
-            bpy.context.scene.render.resolution_y = 2160
-            bpy.context.scene.cycles.samples = 4096
-            for i in range(5):
-                bpy.ops.mesh.primitive_cube_add(location=(i * 3, 0, 0))
-                bpy.ops.object.modifier_add(type='SUBSURF')
-                bpy.context.object.modifiers[0].levels = 4
-                bpy.context.object.modifiers[0].render_levels = 6
-
-        self._setup_scene(setup)
-        _stdout = self._run_prompt(
-            "Blender is running out of memory rendering this scene, "
-            "how can I optimize it?"
-        )
-        # TODO: verify optimization suggestions.
-
-    @unittest.skipUnless(use_llm_check(), use_llm_text)
-    def test_usecase_fix_shading_artifacts(self) -> None:
-        """
-        Fix shading artifacts caused by flipped normals.
-        """
-        def setup() -> None:
-            """Add a smooth-shaded UV sphere and flip the normals on some faces to create shading artifacts."""
-            import bmesh
-            import bpy
-            bpy.ops.mesh.primitive_uv_sphere_add(segments=32, ring_count=16)
-            ob = bpy.context.object
-            ob.name = 'ArtifactSphere'
-            bpy.ops.object.shade_smooth()
-            bpy.ops.object.mode_set(mode='EDIT')
-            bm = bmesh.from_edit_mesh(ob.data)
-            bm.faces.ensure_lookup_table()
-            for f in bm.faces[:10]:
-                f.normal_flip()
-            bmesh.update_edit_mesh(ob.data)
-            bpy.ops.object.mode_set(mode='OBJECT')
-
-        self._setup_scene(setup)
-        _stdout = self._run_prompt(
-            "The mesh 'ArtifactSphere' has strange shading artifacts, "
-            "can you fix that?"
-        )
-        # TODO: verify normals fix was applied or suggested.
-
-    @unittest.skipUnless(use_llm_check(), use_llm_text)
-    def test_usecase_video_export_browser_playback(self) -> None:
-        """
-        Recommend browser-compatible video export settings.
-        """
-        _stdout = self._run_prompt(
-            "The video I exported from Blender doesn't play in my web browsers, "
-            "which output settings should I change?"
-        )
-        # TODO: verify H.264/MP4 recommendation.
-
-    @unittest.skipUnless(use_llm_check(), use_llm_text)
-    def test_usecase_sculpt_brushes_tree_branches(self) -> None:
-        """
-        Suggest sculpt brushes for tree branch detailing.
-        """
-        _stdout = self._run_prompt(
-            "Which sculpt brushes should I use for creating and detailing "
-            "tree branches?"
-        )
-        # TODO: verify brush name suggestions.
-
-    @unittest.skipUnless(use_llm_check(), use_llm_text)
-    def test_usecase_compositing_sdr_hdr(self) -> None:
-        """
-        Set up compositing nodes for dual SDR and HDR output.
-        """
-        def setup() -> None:
-            """Enable compositing nodes on the scene."""
-            import bpy
-            bpy.context.scene.use_nodes = True
-
-        self._setup_scene(setup)
-        _stdout = self._run_prompt(
-            "Set up compositing nodes to save my render both as SDR "
-            "(PNG, sRGB) and HDR (EXR, linear)."
-        )
-        # TODO: verify compositing node setup.
 
     @unittest.skipUnless(use_llm_check(), use_llm_text)
     def test_usecase_verify_checklist(self) -> None:
