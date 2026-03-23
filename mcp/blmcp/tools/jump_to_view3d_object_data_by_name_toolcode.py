@@ -32,6 +32,11 @@ class Result(NamedTuple):
 def main(params: Params) -> Result:
     import bpy  # pylint: disable=import-error,no-name-in-module
 
+    if bpy.app.background:
+        return Result(status="error", message="Not available in background mode")
+    if bpy.context.window is None:
+        return Result(status="error", message="No active window")
+
     target = None
     for obj in bpy.data.objects:
         if obj.data is not None and obj.data.name == params.name:

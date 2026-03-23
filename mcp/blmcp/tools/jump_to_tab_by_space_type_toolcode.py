@@ -32,15 +32,21 @@ class Result(NamedTuple):
 def main(params: Params) -> Result:
     import bpy  # pylint: disable=import-error,no-name-in-module
 
-    # Find an existing workspace whose main area matches the desired space type.
+    if bpy.app.background:
+        return Result(status="error", message="Not available in background mode")
+    if bpy.context.window is None:
+        return Result(status="error", message="No active window")
+
+    def _largest_area(screen: "bpy.types.Screen") -> "bpy.types.Area | None":
+        return max(screen.areas, key=lambda a: a.width * a.height, default=None)
+
+    # Find an existing workspace whose largest area matches the desired space type.
     found = None
     for ws in bpy.data.workspaces:
         for screen in ws.screens:
-            for area in screen.areas:
-                if area.type == params.space_type:
-                    found = ws
-                    break
-            if found:
+            area = _largest_area(screen)
+            if area is not None and area.type == params.space_type:
+                found = ws
                 break
         if found:
             break
@@ -57,9 +63,9 @@ def main(params: Params) -> Result:
             return Result(status="error", message=str(ex))
         new_ws = bpy.context.window.workspace
         new_ws.name = params.space_type.replace("_", " ").title()
-        for area in bpy.context.screen.areas:
+        area = _largest_area(bpy.context.screen)
+        if area is not None:
             area.type = params.space_type
-            break
         return Result(
             status="ok",
             workspace=new_ws.name,
@@ -71,7 +77,7 @@ def main(params: Params) -> Result:
         area.type
         for ws in bpy.data.workspaces
         for screen in ws.screens
-        for area in screen.areas
+        for area in ((_largest_area(screen),) if _largest_area(screen) else ())
     })
     return Result(
         status="error",
