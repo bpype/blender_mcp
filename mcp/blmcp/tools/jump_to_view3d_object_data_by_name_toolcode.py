@@ -49,21 +49,31 @@ def main(params: Params) -> Result:
         if target.hide_get():
             target.hide_set(False)
 
-        def _enable_collections(layer_col: Any, tgt: Any) -> None:
+        def _enable_collections(layer_col: Any, tgt: Any) -> bool:
+            found = False
             for child in layer_col.children:
-                _enable_collections(child, tgt)
+                if _enable_collections(child, tgt):
+                    found = True
             if tgt.name in layer_col.collection.objects:
+                found = True
+            if found:
                 layer_col.exclude = False
                 layer_col.hide_viewport = False
+            return found
 
         _enable_collections(bpy.context.view_layer.layer_collection, target)
+
+    if bpy.context.mode != "OBJECT":
+        bpy.ops.object.mode_set(mode="OBJECT")
 
     bpy.ops.object.select_all(action="DESELECT")
     target.select_set(True)
     bpy.context.view_layer.objects.active = target
 
+    view3d_found = False
     for area in bpy.context.screen.areas:
         if area.type == "VIEW_3D":
+            view3d_found = True
             # Exit camera view so the user sees the object in a free viewport.
             r3d = area.spaces.active.region_3d
             if r3d and r3d.view_perspective == "CAMERA":
@@ -81,4 +91,5 @@ def main(params: Params) -> Result:
         data_name=params.name,
         type=target.type,
         location=list(target.location),
+        message=None if view3d_found else "No 3D viewport found, object selected but not framed",
     )
