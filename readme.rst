@@ -1,7 +1,21 @@
-
 ###########
 Blender MCP
 ###########
+
+
+Security Warning
+================
+
+   The MCP server will execute LLM generated code in Blender without any guards in place
+   to protect your data from removal or being sent to a remote location.
+
+   To keep your data safe it is recommended to use a virtual machine,
+   or a system without access to sensitive information.
+
+
+Overview
+========
+
 
 A lightweight MCP (Model Context Protocol) server for Blender.
 Allows LLM assistants to interact with a running Blender
