@@ -14,7 +14,7 @@ __all__ = (
 
 import io
 import sys
-from typing import IO
+from typing import IO, Self
 
 
 class _Tee(io.TextIOBase):
@@ -54,7 +54,7 @@ class CaptureOutput:
         "_original_err",
     )
 
-    def __enter__(self) -> "CaptureOutput":
+    def __enter__(self) -> Self:
         self._original_out = sys.stdout
         self._original_err = sys.stderr
         self._tee_out = _Tee(self._original_out)

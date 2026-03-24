@@ -23,7 +23,7 @@ __all__ = (
 )
 
 import sys
-from typing import Any
+from typing import Any, Self
 
 
 def _blocked_exit(*args: object, **kwargs: object) -> None:  # noqa: ARG001
@@ -145,7 +145,7 @@ class WeakSandboxForLLM:
     # -------------------------------------------------------------------------
     # Context manager
 
-    def __enter__(self) -> "WeakSandboxForLLM":
+    def __enter__(self) -> Self:
         self._store_attrs = self.override_store()
         self._store_ops = self.ops_blocked_store()
         return self

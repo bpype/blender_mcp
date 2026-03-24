@@ -17,7 +17,7 @@ import os
 import select
 import subprocess
 import time
-from typing import Any
+from typing import Any, Self
 
 # Scale all timeouts (e.g. `GLOBAL_TIMEOUT_SCALE=2` doubles every limit).
 _TIMEOUT_SCALE = float(os.environ.get("GLOBAL_TIMEOUT_SCALE", "1"))
@@ -166,7 +166,7 @@ class MCPClient:
             self._proc.kill()
             self._proc.wait(timeout=_TIMEOUT_LOCAL_PROC)
 
-    def __enter__(self) -> "MCPClient":
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, *args: object) -> None:

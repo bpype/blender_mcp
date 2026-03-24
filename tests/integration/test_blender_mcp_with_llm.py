@@ -25,7 +25,7 @@ import glob
 import http.server
 import inspect
 import json
-from typing import Any
+from typing import Any, Self
 import os
 import shlex
 import signal
@@ -376,7 +376,7 @@ class _StatusReport:
     def status(self, text: str) -> None:
         self._status = text
 
-    def __enter__(self) -> "_StatusReport":
+    def __enter__(self) -> Self:
         print("  {:s} ...".format(self._label), end="", flush=True)
         return self
 
