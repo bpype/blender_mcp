@@ -16,16 +16,17 @@ from blmcp.tools_helpers import (
 from blmcp.tools_helpers.connection import send_code
 from blmcp.tools.render_thumbnail_to_path_toolcode import Params
 from mcp.server.fastmcp import FastMCP  # pylint: disable=import-error,no-name-in-module
+from mcp.types import ToolAnnotations  # pylint: disable=import-error,no-name-in-module
 
 _TOOL_CALL = toolcode_wrap_with_calling_convention(toolcode_load_from_filepath(__file__))
 
 
 def register(mcp: FastMCP) -> None:
     @mcp.tool(
-        annotations={
-            "title": "Render Thumbnail to Path",
-            "destructiveHint": True,
-        }
+        annotations=ToolAnnotations(
+            title="Render Thumbnail to Path",
+            destructiveHint=True,
+        )
     )
     def render_thumbnail_to_path(output_path: str) -> dict[str, object]:
         """

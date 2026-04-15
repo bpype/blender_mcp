@@ -16,16 +16,17 @@ from blmcp.tools_helpers import (
 from blmcp.tools_helpers.connection import send_code
 from blmcp.tools.jump_to_tab_by_name_toolcode import Params
 from mcp.server.fastmcp import FastMCP  # pylint: disable=import-error,no-name-in-module
+from mcp.types import ToolAnnotations  # pylint: disable=import-error,no-name-in-module
 
 _TOOL_CALL = toolcode_wrap_with_calling_convention(toolcode_load_from_filepath(__file__))
 
 
 def register(mcp: FastMCP) -> None:
     @mcp.tool(
-        annotations={
-            "title": "Switch to Workspace",
-            "destructiveHint": True,
-        }
+        annotations=ToolAnnotations(
+            title="Switch to Workspace",
+            destructiveHint=True,
+        )
     )
     def jump_to_tab_by_name(name: str) -> dict[str, object]:
         """
