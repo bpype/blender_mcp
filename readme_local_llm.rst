@@ -49,8 +49,8 @@ Create & Activate a Virtual Environment:
 Install Requirements & Blender MCP:
    .. code-block::
 
-      pip install -r requirements.txt
-      pip install -e .
+      pip install -r mcp/requirements.txt
+      pip install -e mcp
 
    Check that ``blender-mcp`` runs (it will do nothing, press Ctrl-C to exit).
 

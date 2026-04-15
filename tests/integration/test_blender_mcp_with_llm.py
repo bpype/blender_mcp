@@ -413,7 +413,7 @@ def _create_venv() -> str:
         check=True,
     )
     result = subprocess.run(
-        [venv_python, "-m", "pip", "install", _REPO_DIR],
+        [venv_python, "-m", "pip", "install", os.path.join(_REPO_DIR, "mcp")],
         capture_output=True,
     )
     if result.returncode != 0:

@@ -16,7 +16,7 @@ dependencies = [
 blender-mcp = "blmcp:main"
 
 [tool.setuptools.packages.find]
-where = ["mcp"]
+where = ["."]
 
 [tool.setuptools.package-data]
 "blmcp" = [
@@ -46,7 +46,7 @@ module = [
 ignore_missing_imports = true
 
 [tool.ruff]
-extend-exclude = ["mcp/blmcp/data"]
+extend-exclude = ["blmcp/data"]
 
 [tool.pylint.format]
 max-line-length = 120
