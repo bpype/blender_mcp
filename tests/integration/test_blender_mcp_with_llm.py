@@ -69,8 +69,12 @@ _TIMEOUT_HTTP_REQUEST = 2.0 * _TIMEOUT_SCALE
 _TIMEOUT_CHAT_CLIENT = int(120 * _TIMEOUT_SCALE)
 
 
-if os.environ.get("USE_LLAMA_CXX"):
-    if os.environ.get("USE_ANTHROPIC"):
+def _env_nonzero(var: str) -> bool:
+    return os.environ.get(var, "").lstrip("0") != ""
+
+
+if _env_nonzero("USE_LLAMA_CXX"):
+    if _env_nonzero("USE_ANTHROPIC"):
         raise RuntimeError("USE_LLAMA_CXX and USE_ANTHROPIC cannot both be set")
     if not os.environ.get("LLAMA_SERVER_BIN"):
         raise RuntimeError("USE_LLAMA_CXX requires LLAMA_SERVER_BIN")
@@ -80,7 +84,7 @@ if os.environ.get("USE_LLAMA_CXX"):
 
 def use_llm_check() -> bool:
     """True when a real LLM is available (``USE_ANTHROPIC=1`` or ``USE_LLAMA_CXX=1``)."""
-    return bool(os.environ.get("USE_ANTHROPIC") or os.environ.get("USE_LLAMA_CXX"))
+    return _env_nonzero("USE_ANTHROPIC") or _env_nonzero("USE_LLAMA_CXX")
 
 
 use_llm_text = "This test requires a real LLM (USE_ANTHROPIC or USE_LLAMA_CXX)"
@@ -88,7 +92,7 @@ use_llm_text = "This test requires a real LLM (USE_ANTHROPIC or USE_LLAMA_CXX)"
 
 def use_screenshot_check() -> bool:
     """True when screenshots are enabled (``USE_SCREENSHOT=1``)."""
-    return bool(os.environ.get("USE_SCREENSHOT"))
+    return _env_nonzero("USE_SCREENSHOT")
 
 
 # ---------------------------------------------------------------------------
@@ -440,7 +444,7 @@ def _start_llama_server(
     cmd = [llama_bin, "--port", str(port)] + extra_args
     print("\n    command: {:s}".format(shlex.join(cmd)), flush=True)
 
-    verbose = bool(os.environ.get("LLAMA_SERVER_VERBOSE"))
+    verbose = _env_nonzero("LLAMA_SERVER_VERBOSE")
     if verbose:
         proc: subprocess.Popen[bytes] = subprocess.Popen(cmd, env=env)
     else:
@@ -620,7 +624,7 @@ class TestChatClient(unittest.TestCase):
 
         # ----------------
         # Headless display
-        if not os.environ.get("BLENDER_MCP_FOREGROUND"):
+        if not _env_nonzero("BLENDER_MCP_FOREGROUND"):
             with _StatusReport("Starting headless display") as st:
                 weston_proc, weston_ini = _start_headless_display(env)
                 cls.addClassCleanup(_stop_headless_display, weston_proc, weston_ini)
@@ -650,7 +654,7 @@ class TestChatClient(unittest.TestCase):
         # -----------------------
         # llama-server (optional)
         cls._llama_server_proc = None
-        if os.environ.get("USE_LLAMA_CXX"):
+        if _env_nonzero("USE_LLAMA_CXX"):
             with _StatusReport("Starting llama-server (port {:d})".format(_PORT_LLAMA_SERVER)) as st:
                 cls._llama_server_proc = _start_llama_server(_PORT_LLAMA_SERVER, env)
                 cls.addClassCleanup(_stop_llama_server, cls._llama_server_proc)
@@ -713,7 +717,7 @@ class TestChatClient(unittest.TestCase):
             "Expected a tool call in output.\n" + self._last_output_info,
         )
 
-    @unittest.skipUnless(os.environ.get("USE_LLAMA_CXX"), "USE_LLAMA_CXX must be set")
+    @unittest.skipUnless(_env_nonzero("USE_LLAMA_CXX"), "USE_LLAMA_CXX must be set")
     def test_chat_client_for_primitive_llm(self) -> None:
         """
         Basic tool call via llama-server with an explicit tool name in the prompt.
@@ -831,7 +835,7 @@ class TestChatClient(unittest.TestCase):
 
     def _llm_provider_args(self) -> list[str]:
         """Return provider arguments for the real LLM (Claude or llama-server)."""
-        if os.environ.get("USE_LLAMA_CXX"):
+        if _env_nonzero("USE_LLAMA_CXX"):
             return ["openai", "--api-url", "http://localhost:{:d}".format(_PORT_LLAMA_SERVER)]
         model = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-20250514")
         return ["claude", "--model", model]
