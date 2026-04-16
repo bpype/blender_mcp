@@ -26,6 +26,8 @@ __all__ = (
     "list_doctree_definitions",
     "split_paragraphs_for_path",
     "split_paragraphs_from_text",
+    "split_paragraphs_with_sections_for_path",
+    "split_paragraphs_with_sections_from_text",
 )
 
 import collections
@@ -502,6 +504,158 @@ def split_paragraphs_for_path(path: str) -> list[str]:
     doctree = _rst_to_doctree(text, filename=path)
     value = tuple(_walk_paragraphs(doctree))
     _cache_put(key, value)
+    return list(value)
+
+
+# ---------------------------------------------------------------------------
+# Section-aware paragraph walker.
+
+
+def _walk_paragraphs_with_sections(
+        doctree,
+) -> Iterator[tuple[str, tuple[str, ...]]]:
+    """
+    Yield ``(text, section_stack)`` per paragraph.
+
+    *text* is identical to what :func:`_walk_paragraphs` emits (titles
+    of enclosing sections are merged into the first following content
+    paragraph). *section_stack* is the full tuple of section titles
+    from the document root down to the section containing the
+    paragraph, so callers can display a breadcrumb or detect whether
+    a hit lies within a title-named section.
+    """
+    section_stack: list[str] = []
+    pending_titles: list[str] = []
+
+    def _flush_with_pending(text: str) -> str:
+        nonlocal pending_titles
+        if pending_titles:
+            out = "\n\n".join(pending_titles + [text])
+            pending_titles = []
+            return out
+        return text
+
+    def _emit(node):
+        nonlocal pending_titles
+        if isinstance(node, docutils.nodes.document):
+            for child in node.children:
+                yield from _emit(child)
+            return
+        if isinstance(node, docutils.nodes.section):
+            # A section's first `title` child names the section; push
+            # it on the stack (for breadcrumb) and into pending_titles
+            # (for merge-into-next-content). Remaining children are
+            # visited without re-processing the title.
+            title_node = None
+            for child in node.children:
+                if isinstance(child, docutils.nodes.title):
+                    title_node = child
+                    break
+            pushed = False
+            if title_node is not None:
+                title_text = title_node.astext()
+                section_stack.append(title_text)
+                pending_titles.append(title_text)
+                pushed = True
+            for child in node.children:
+                if child is title_node:
+                    continue
+                yield from _emit(child)
+            if pushed:
+                section_stack.pop()
+            return
+        if isinstance(node, docutils.nodes.title):
+            # Standalone title outside a section wrapper; fall back
+            # to the existing merge behaviour.
+            pending_titles.append(node.astext())
+            return
+        if isinstance(node, docutils.nodes.system_message):
+            return
+        if _is_directive_container(node):
+            prelude_parts: list[str] = []
+            nested: list = []
+            for child in node.children:
+                if _is_directive_container(child):
+                    nested.append(child)
+                else:
+                    part = _node_text(child)
+                    if part.strip():
+                        prelude_parts.append(part)
+            if prelude_parts:
+                combined = "\n\n".join(prelude_parts)
+                yield _flush_with_pending(combined), tuple(section_stack)
+            for child in nested:
+                yield from _emit(child)
+            return
+        text = _node_text(node)
+        if not text.strip():
+            return
+        yield _flush_with_pending(text), tuple(section_stack)
+
+    yield from _emit(doctree)
+    if pending_titles:
+        yield "\n\n".join(pending_titles), tuple(section_stack)
+
+
+_PARAGRAPH_SECTION_CACHE: collections.OrderedDict[
+    tuple[str, float], tuple[tuple[str, tuple[str, ...]], ...]
+] = collections.OrderedDict()
+
+
+def _cache_sections_get(
+        key: tuple[str, float],
+) -> tuple[tuple[str, tuple[str, ...]], ...] | None:
+    result = _PARAGRAPH_SECTION_CACHE.get(key)
+    if result is not None:
+        _PARAGRAPH_SECTION_CACHE.move_to_end(key)
+    return result
+
+
+def _cache_sections_put(
+        key: tuple[str, float],
+        value: tuple[tuple[str, tuple[str, ...]], ...],
+) -> None:
+    _PARAGRAPH_SECTION_CACHE[key] = value
+    if len(_PARAGRAPH_SECTION_CACHE) > _PARAGRAPH_CACHE_MAX:
+        _PARAGRAPH_SECTION_CACHE.popitem(last=False)
+
+
+def split_paragraphs_with_sections_from_text(
+        path: str, mtime: float, text: str,
+) -> list[tuple[str, tuple[str, ...]]]:
+    """
+    Paragraph + section-stack list for an RST file whose content is
+    already in memory. Cached by ``(path, mtime)`` like the plain
+    paragraph splitter but with an independent cache so the two
+    views don't fight for space.
+    """
+    key = (path, mtime)
+    cached = _cache_sections_get(key)
+    if cached is not None:
+        return list(cached)
+    doctree = _rst_to_doctree(text, filename=path)
+    value = tuple(_walk_paragraphs_with_sections(doctree))
+    _cache_sections_put(key, value)
+    return list(value)
+
+
+def split_paragraphs_with_sections_for_path(
+        path: str,
+) -> list[tuple[str, tuple[str, ...]]]:
+    """
+    Return ``(text, section_stack)`` per paragraph for an RST file,
+    cached by ``(path, mtime)``.
+    """
+    mtime = os.stat(path).st_mtime
+    key = (path, mtime)
+    cached = _cache_sections_get(key)
+    if cached is not None:
+        return list(cached)
+    with open(path, encoding="utf-8", errors="replace") as fh:
+        text = fh.read()
+    doctree = _rst_to_doctree(text, filename=path)
+    value = tuple(_walk_paragraphs_with_sections(doctree))
+    _cache_sections_put(key, value)
     return list(value)
 
 

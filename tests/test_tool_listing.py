@@ -527,6 +527,128 @@ EXPECTED_TOOLS = [
             "title": "render_viewport_to_pathArguments",
             "type": "object"
         }
+    },
+    {
+        "name": "search_api_docs",
+        "description": "\n"
+        "Full-text search over the bundled Blender Python API reference.\n"
+        "\n"
+        "Returns a ranked list of hits. Each hit has:\n"
+        "\n"
+        "- ``path``: file path relative to the bundled docs.\n"
+        "- ``text``: the matching paragraph plus ``context``\n"
+        "  paragraphs on either side.\n"
+        "- ``breadcrumb``: the section path containing the hit\n"
+        "  (``Section > Sub-section > ...``).\n"
+        "- ``index``: the hit's position in the result list.\n"
+        "- ``score``: a relevance score; higher is better.\n"
+        "\n"
+        "The query is tokenised on whitespace and matched\n"
+        "case-insensitively. Every token must appear somewhere in\n"
+        "the paragraph body, the file path, or an enclosing section\n"
+        "title - in any order. Common English stop-words (``the``,\n"
+        "``a``, ``how``, ``to``, ...) are dropped, so natural\n"
+        "phrasings like ``\"how to bake\"`` work as expected. Regular\n"
+        "expressions are not supported.\n"
+        "\n"
+        "Use ``context`` to pull more surrounding paragraphs into\n"
+        "each hit (symmetric, default 0). Use ``index`` with the\n"
+        "position of a previous hit (same query) to get that hit\n"
+        "alone with its text widened to its enclosing section.\n"
+        "\n"
+        "Read-only; consults bundled RST files only.\n",
+        "inputSchema": {
+            "properties": {
+                "query": {
+                    "title": "Query",
+                    "type": "string"
+                },
+                "max_results": {
+                    "default": 20,
+                    "title": "Max Results",
+                    "type": "integer"
+                },
+                "context": {
+                    "default": 0,
+                    "title": "Context",
+                    "type": "integer"
+                },
+                "index": {
+                    "anyOf": [
+                        {"type": "integer"},
+                        {"type": "null"}
+                    ],
+                    "default": None,
+                    "title": "Index"
+                }
+            },
+            "required": [
+                "query"
+            ],
+            "title": "search_api_docsArguments",
+            "type": "object"
+        }
+    },
+    {
+        "name": "search_manual_docs",
+        "description": "\n"
+        "Full-text search over the bundled Blender user manual.\n"
+        "\n"
+        "Returns a ranked list of hits. Each hit has:\n"
+        "\n"
+        "- ``path``: file path relative to the bundled docs.\n"
+        "- ``text``: the matching paragraph plus ``context``\n"
+        "  paragraphs on either side.\n"
+        "- ``breadcrumb``: the section path containing the hit\n"
+        "  (``Section > Sub-section > ...``).\n"
+        "- ``index``: the hit's position in the result list.\n"
+        "- ``score``: a relevance score; higher is better.\n"
+        "\n"
+        "The query is tokenised on whitespace and matched\n"
+        "case-insensitively. Every token must appear somewhere in\n"
+        "the paragraph body, the file path, or an enclosing section\n"
+        "title - in any order. Common English stop-words (``the``,\n"
+        "``a``, ``how``, ``to``, ...) are dropped, so natural\n"
+        "phrasings like ``\"how to bake\"`` work as expected. Regular\n"
+        "expressions are not supported.\n"
+        "\n"
+        "Use ``context`` to pull more surrounding paragraphs into\n"
+        "each hit (symmetric, default 0). Use ``index`` with the\n"
+        "position of a previous hit (same query) to get that hit\n"
+        "alone with its text widened to its enclosing section.\n"
+        "\n"
+        "Read-only; consults bundled RST files only.\n",
+        "inputSchema": {
+            "properties": {
+                "query": {
+                    "title": "Query",
+                    "type": "string"
+                },
+                "max_results": {
+                    "default": 20,
+                    "title": "Max Results",
+                    "type": "integer"
+                },
+                "context": {
+                    "default": 0,
+                    "title": "Context",
+                    "type": "integer"
+                },
+                "index": {
+                    "anyOf": [
+                        {"type": "integer"},
+                        {"type": "null"}
+                    ],
+                    "default": None,
+                    "title": "Index"
+                }
+            },
+            "required": [
+                "query"
+            ],
+            "title": "search_manual_docsArguments",
+            "type": "object"
+        }
     }
 ]
 # END: EXPECTED_TOOLS

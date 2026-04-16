@@ -264,6 +264,62 @@ class TestDataFiles(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# Tool call tests.
+
+
+class TestSearchApiDocs(unittest.TestCase):
+    """
+    Tests for the ``search_api_docs`` tool.
+    """
+
+    def test_basic_lookup(self) -> None:
+        """
+        Checks that the module page for a top-level API name appears in
+        the hit list, and each hit carries the matched paragraph text.
+        """
+        # Match the canonical `.. module:: bpy.data` directive line,
+        # which uniquely identifies `api/bpy.data.rst` regardless of
+        # how many other files mention `bpy.data` in prose.
+        payload = _call_server_tool(
+            "search_api_docs",
+            {"query": "module:: bpy.data", "max_results": 5},
+        )
+        hits = payload["hits"]
+        paths = [hit["path"] for hit in hits]
+        self.assertIn("api/bpy.data.rst", paths)
+        for hit in hits:
+            self.assertTrue(hit["text"].strip(), "hit has empty text")
+            self.assertTrue(
+                hit["path"].startswith("api/"),
+                "API search returned non-API path: {:s}".format(hit["path"]),
+            )
+
+
+class TestSearchManualDocs(unittest.TestCase):
+    """
+    Tests for the ``search_manual_docs`` tool.
+    """
+
+    def test_basic_lookup(self) -> None:
+        """
+        Checks that a common manual term returns hits, all confined to
+        the manual corpus.
+        """
+        payload = _call_server_tool(
+            "search_manual_docs",
+            {"query": "modeling", "max_results": 3},
+        )
+        hits = payload["hits"]
+        self.assertTrue(hits, "expected at least one manual hit for 'modeling'")
+        for hit in hits:
+            self.assertTrue(hit["text"].strip(), "hit has empty text")
+            self.assertTrue(
+                hit["path"].startswith("manual/"),
+                "manual search returned non-manual path: {:s}".format(hit["path"]),
+            )
+
+
+# ---------------------------------------------------------------------------
 # Server metadata tests.
 
 
