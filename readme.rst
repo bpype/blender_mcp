@@ -151,6 +151,10 @@ Tools
 ``get_objects_summary``
    Return the scene's collection hierarchy and their objects.
 
+``get_python_api_docs``
+   Return the Blender Python API docs for *identifier*, or list modules
+   matching a trailing-``*`` discovery pattern.
+
 ``get_screenshot_of_area_as_image``
    Take a screenshot of a single Blender area and return it as a PNG image.
 

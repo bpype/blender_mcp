@@ -10,6 +10,7 @@ define HELP_TEXT
 
 Targets
    * test:              Run unit tests.
+   * test_rst_parse:    Run unit tests for RST manual/API doc parsing.
    * test_integration:  Run integration tests (requires BLENDER_BIN).
                         Loads .env if present (e.g. ANTHROPIC_API_KEY).
                         Uses .test_venv (delete to force a rebuild).
@@ -84,8 +85,12 @@ help:
 
 test:
 	$(PYTHON) tests/test_tool_listing.py
+	$(PYTHON) tests/test_rst_parse.py
 	$(PYTHON) tests/test_mcp_server.py
 	$(PYTHON) tests/test_blender_mcp_with_blender.py
+
+test_rst_parse:
+	$(PYTHON) tests/test_rst_parse.py
 
 test_integration:
 ifdef TESTS_LIST

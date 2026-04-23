@@ -250,6 +250,72 @@ EXPECTED_TOOLS = [
         }
     },
     {
+        "name": "get_python_api_docs",
+        "description": "\n"
+        "Return the Blender Python API docs for *identifier*, or list\n"
+        "modules matching a trailing-``*`` discovery pattern.\n"
+        "\n"
+        "*identifier* should be a fully-qualified Python name (e.g.\n"
+        "``bpy.app`` or ``bpy.types.Scene.frame_current``).\n"
+        "The trailing-``*`` forms are supported as discovery entry-points:\n"
+        "\n"
+        "- ``*`` enumerates the top-level modules (``bpy``, ``bmesh``,\n"
+        "  ``mathutils``, ``gpu``, ...).\n"
+        "- ``X.*`` enumerates the direct-child identifiers under the\n"
+        "  *X* namespace (``bpy.*`` -> ``bpy.app``, ``bpy.context``, ...).\n"
+        "\n"
+        "Both return a ``namespace`` response even when ``X.rst`` would\n"
+        "otherwise resolve to ``exact``; the ``.*`` form lets an agent\n"
+        "force the child listing.\n"
+        "\n"
+        "The response always carries ``kind``, ``found``, and ``identifier``.\n"
+        "The remaining keys depend on ``kind``:\n"
+        "\n"
+        "- ``\"exact\"`` (``found=True``): ``<identifier>.rst`` was read.\n"
+        "  Extra keys: ``content`` (RST text), ``examples``. When the\n"
+        "  file exceeds 32 KB, ``content`` is replaced with a dot-point\n"
+        "  summary of the file's top-level definitions (prefixed by a\n"
+        "  header noting the truncation) and ``examples`` is empty -\n"
+        "  re-query individual members for their rendered blocks.\n"
+        "- ``\"namespace\"`` (``found=True``):\n"
+        "  no ``<identifier>.rst`` but ``<identifier>.<child>.rst`` siblings exist.\n"
+        "  Extra key: ``submodules`` (list of child identifiers).\n"
+        "- ``\"definition\"`` (``found=True``):\n"
+        "  *identifier* is defined inside a parent RST\n"
+        "  (e.g. ``bpy.props.IntProperty`` lives in ``bpy.props.rst``).\n"
+        "  Extra keys: ``content`` (rendered block), ``examples``.\n"
+        "- ``\"partial\"`` (``found=False``):\n"
+        "  the parent RST was located but the trailing component isn't defined in it.\n"
+        "  Extra keys:\n"
+        "  - ``parent`` the identifier whose RST was loaded.\n"
+        "  - ``available`` top-level definitions in that RST.\n"
+        "  - ``submodules`` sibling identifiers ``<parent>.<child>`` with their own RSTs,\n"
+        "    filtered to those whose last component contains every character of the missing tail.\n"
+        "\n"
+        "  For a toctree landing page like ``bpy.types`` ``available`` is empty and ``submodules``\n"
+        "  is the near-miss list; for a self-contained module like ``bpy.props`` it's the reverse.\n"
+        "- ``\"suggestions\"`` (``found=False``):\n"
+        "  no direct match, but *identifier* appears as a component of other files.\n"
+        "  Extra key: ``suggestions`` (list of full identifiers).\n"
+        "- ``\"missing\"`` (``found=False``): nothing matched.\n"
+        "\n"
+        "``examples`` (present on the ``exact`` and ``definition`` kinds)\n"
+        "is a list of ``{path, content}`` entries referenced from this documentation.\n",
+        "inputSchema": {
+            "properties": {
+                "identifier": {
+                    "title": "Identifier",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "identifier"
+            ],
+            "title": "get_python_api_docsArguments",
+            "type": "object"
+        }
+    },
+    {
         "name": "get_screenshot_of_area_as_image",
         "description": "\n"
         "Take a screenshot of a single Blender area and return it as a PNG image.\n"

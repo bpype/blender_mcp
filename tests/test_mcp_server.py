@@ -141,6 +141,37 @@ def _query_server() -> dict[str, Any]:
     return asyncio.run(_run())
 
 
+def _call_server_tool(name: str, arguments: dict[str, object]) -> dict[str, Any]:
+    """
+    Launch the MCP server, call tool *name* with *arguments*, return the
+    JSON-decoded result payload from the first text content block.
+    """
+    import json
+
+    async def _run() -> dict[str, Any]:
+        params = StdioServerParameters(
+            command=sys.executable,
+            args=["-m", "blmcp"],
+            env=_server_env(),
+        )
+        async with stdio_client(params) as (read, write):
+            async with ClientSession(read, write) as session:
+                await session.initialize()
+                call_result = await session.call_tool(name, arguments)
+                if call_result.isError:
+                    raise RuntimeError(
+                        "Tool {:s} returned error: {!r}".format(name, call_result.content)
+                    )
+                # FastMCP serialises dict return values as a single JSON
+                # text-content block.
+                text = call_result.content[0].text  # type: ignore[attr-defined]
+                payload = json.loads(text)
+                assert isinstance(payload, dict)
+                return payload
+
+    return asyncio.run(_run())
+
+
 # ---------------------------------------------------------------------------
 # Data file tests (no server needed).
 
@@ -650,6 +681,308 @@ class TestMainConfiguration(unittest.TestCase):
                 ),
             ],
         )
+
+
+class TestGetPythonAPIDocs(unittest.TestCase):
+    """
+    Exercise the ``get_python_api_docs`` MCP tool end-to-end via a
+    subprocess server. Does not require Blender.
+    """
+
+    def test_returns_content_for_bpy(self) -> None:
+        """
+        Checks that calling the tool with ``bpy.app`` returns an ``exact``
+        payload with the RST content.
+
+        (There is no standalone ``bpy.rst`` in the bundled docs; the top-level
+        namespace is split into ``bpy.app``, ``bpy.context``, ``bpy.data`` etc.)
+        """
+        payload = _call_server_tool(
+            "get_python_api_docs", {"identifier": "bpy.app"},
+        )
+        self.assertEqual(payload["kind"], "exact")
+        self.assertTrue(payload["found"])
+        self.assertEqual(payload["identifier"], "bpy.app")
+        content = payload["content"]
+        self.assertIsInstance(content, str)
+        self.assertTrue(len(content) > 0)
+
+    def test_star_lists_top_level_modules(self) -> None:
+        """
+        ``*`` is a discovery sentinel - it returns a ``namespace``
+        payload enumerating every top-level API module, with doc-meta
+        pages (``index``, ``info_overview``, ``change_log``) filtered
+        out.
+        """
+        payload = _call_server_tool(
+            "get_python_api_docs", {"identifier": "*"},
+        )
+        self.assertEqual(payload["kind"], "namespace")
+        self.assertTrue(payload["found"])
+        self.assertEqual(payload["identifier"], "*")
+        submodules = payload["submodules"]
+        self.assertIsInstance(submodules, list)
+        # Modules reached via either rule (child-file or `.. module::`).
+        for expected in ("bpy", "bmesh", "mathutils", "gpu", "blf", "bl_math"):
+            self.assertIn(expected, submodules)
+        # Doc-meta pages must not leak into the listing.
+        for excluded in ("index", "change_log", "info_overview"):
+            self.assertNotIn(excluded, submodules)
+
+    def test_dot_star_lists_direct_children_of_namespace(self) -> None:
+        """
+        ``bpy.*`` forces a ``namespace`` response listing the direct
+        children of ``bpy`` regardless of whether a root ``bpy.rst``
+        exists. Same shape as plain ``bpy``, but explicit.
+        """
+        payload = _call_server_tool(
+            "get_python_api_docs", {"identifier": "bpy.*"},
+        )
+        self.assertEqual(payload["kind"], "namespace")
+        self.assertTrue(payload["found"])
+        self.assertEqual(payload["identifier"], "bpy.*")
+        submodules = payload["submodules"]
+        self.assertIsInstance(submodules, list)
+        for expected in ("bpy.app", "bpy.data", "bpy.props", "bpy.types"):
+            self.assertIn(expected, submodules)
+        # Must be direct children only; `bpy.app.handlers` is a
+        # grandchild and must not appear.
+        self.assertNotIn("bpy.app.handlers", submodules)
+
+    def test_dot_star_forces_namespace_even_when_exact_exists(self) -> None:
+        """
+        ``bmesh.rst`` exists and has a ``.. module::`` directive, so
+        ``bmesh`` alone resolves to ``kind: exact``. ``bmesh.*`` must
+        bypass the exact-match and return the child namespace listing.
+        """
+        payload = _call_server_tool(
+            "get_python_api_docs", {"identifier": "bmesh.*"},
+        )
+        self.assertEqual(payload["kind"], "namespace")
+        self.assertTrue(payload["found"])
+        self.assertEqual(payload["identifier"], "bmesh.*")
+        submodules = payload["submodules"]
+        self.assertIsInstance(submodules, list)
+        for expected in ("bmesh.ops", "bmesh.types", "bmesh.utils"):
+            self.assertIn(expected, submodules)
+
+    def test_generates_listing_when_identifier_has_no_rst_file(self) -> None:
+        """
+        Checks the namespace-listing path: ``bpy`` has no ``bpy.rst``
+        on disk, so the tool must list direct-child identifiers under
+        a ``submodules`` key.
+        """
+        payload = _call_server_tool(
+            "get_python_api_docs", {"identifier": "bpy"},
+        )
+        self.assertEqual(payload["kind"], "namespace")
+        self.assertTrue(payload["found"])
+        self.assertEqual(payload["identifier"], "bpy")
+        submodules = payload["submodules"]
+        self.assertIsInstance(submodules, list)
+        self.assertTrue(submodules, "Expected at least one submodule")
+        for entry in submodules:
+            self.assertIsInstance(entry, str)
+            self.assertTrue(entry.startswith("bpy."))
+        for expected in ("bpy.app", "bpy.data", "bpy.props"):
+            self.assertIn(expected, submodules)
+
+    def test_generates_suggestions_when_identifier_appears_as_component_elsewhere(self) -> None:
+        """
+        Checks the ``suggestions`` path: ``app`` is not itself a
+        documented identifier, but is a component of several paths
+        (``bpy.app``, ``bpy.app.handlers``, ...), so the tool should
+        return them as suggestions with ``found: False``.
+        """
+        payload = _call_server_tool(
+            "get_python_api_docs", {"identifier": "app"},
+        )
+        self.assertEqual(payload["kind"], "suggestions")
+        self.assertFalse(payload["found"])
+        self.assertEqual(payload["identifier"], "app")
+        suggestions = payload["suggestions"]
+        self.assertIsInstance(suggestions, list)
+        self.assertIn("bpy.app", suggestions)
+        # Descendants of a shorter match are pruned - `bpy.app` is
+        # already listed, so `bpy.app.handlers` (and siblings) must
+        # not appear.
+        for descendant in ("bpy.app.handlers", "bpy.app.icons", "bpy.app.timers"):
+            self.assertNotIn(descendant, suggestions)
+
+    def test_resolves_identifier_defined_within_rst(self) -> None:
+        """
+        ``bpy.props.IntProperty`` has no file of its own; the definition
+        lives inside ``bpy.props.rst`` as ``.. function:: IntProperty``.
+        The tool should find and return that block under ``kind: definition``.
+        """
+        payload = _call_server_tool(
+            "get_python_api_docs", {"identifier": "bpy.props.IntProperty"},
+        )
+        self.assertEqual(payload["kind"], "definition")
+        self.assertTrue(payload["found"])
+        self.assertEqual(payload["identifier"], "bpy.props.IntProperty")
+        content = payload["content"]
+        self.assertIsInstance(content, str)
+        # Rendered block includes the RST signature line.
+        self.assertIn(".. function:: IntProperty(", content)
+
+    def test_returns_not_found_for_missing_identifier(self) -> None:
+        """
+        Checks that an unknown identifier yields ``kind: missing`` with
+        ``found: False`` and no content.
+        """
+        payload = _call_server_tool(
+            "get_python_api_docs", {"identifier": "this.module.doesnt.exist"},
+        )
+        self.assertEqual(payload["kind"], "missing")
+        self.assertFalse(payload["found"])
+        self.assertEqual(payload["identifier"], "this.module.doesnt.exist")
+        self.assertNotIn("content", payload)
+
+    def test_partial_when_parent_exists_but_tail_missing(self) -> None:
+        """
+        ``bpy.props.IntegerProperty`` is a plausible typo for
+        ``bpy.props.IntProperty``. The tool should locate the parent
+        ``bpy.props.rst``, fail to match the tail, and return a
+        ``partial`` payload listing the real definitions in that RST
+        so the agent can retry.
+        """
+        payload = _call_server_tool(
+            "get_python_api_docs", {"identifier": "bpy.props.IntegerProperty"},
+        )
+        self.assertEqual(payload["kind"], "partial")
+        self.assertFalse(payload["found"])
+        self.assertEqual(payload["identifier"], "bpy.props.IntegerProperty")
+        self.assertEqual(payload["parent"], "bpy.props")
+        available = payload["available"]
+        self.assertIsInstance(available, list)
+        self.assertIn("IntProperty", available)
+        self.assertIn("BoolProperty", available)
+        # Module pseudo-definition is filtered out of `available`.
+        self.assertNotIn("bpy.props", available)
+        # Bogus typo shouldn't leak in.
+        self.assertNotIn("IntegerProperty", available)
+        # `bpy.props` is a self-contained module (no sibling
+        # `bpy.props.<child>.rst` files), so submodules is empty.
+        self.assertEqual(payload["submodules"], [])
+
+    def test_summarizes_oversized_exact_match(self) -> None:
+        """
+        ``bpy.ops.object.rst`` is ~150 KB - far above the 32 KB inline
+        cap. The tool should return a bullet-list summary with a
+        too-large header instead of the full file, and empty examples.
+        """
+        payload = _call_server_tool(
+            "get_python_api_docs", {"identifier": "bpy.ops.object"},
+        )
+        self.assertEqual(payload["kind"], "exact")
+        self.assertTrue(payload["found"])
+        self.assertEqual(payload["examples"], [])
+        content = payload["content"]
+        # Header must flag the truncation so agents don't treat the
+        # bullet list as if it were the full RST.
+        self.assertIn("File too large", content)
+        self.assertIn("32 KB", content)
+        lines = content.splitlines()
+        bullet_lines = [line for line in lines if line.startswith("- ")]
+        self.assertGreater(
+            len(bullet_lines), 10,
+            "Expected many top-level operators in the summary",
+        )
+        # Spot-check a well-known bpy.ops.object operator.
+        self.assertTrue(
+            any(line == "- delete" for line in bullet_lines),
+            "Expected `- delete` bullet in summary",
+        )
+
+    def test_partial_toctree_parent_yields_submodules(self) -> None:
+        """
+        ``bpy.types.rst`` is a toctree landing page - its doctree has
+        no API definitions of its own, but `bpy.types.<X>.rst` sibling
+        files hold the per-class docs. The tool should surface those
+        siblings via ``submodules``, filtered to names containing every
+        character of the missing tail so an agent that typoed a class
+        name still gets a focused near-miss list.
+        """
+        payload = _call_server_tool(
+            "get_python_api_docs", {"identifier": "bpy.types.Scne"},
+        )
+        self.assertEqual(payload["kind"], "partial")
+        self.assertFalse(payload["found"])
+        self.assertEqual(payload["parent"], "bpy.types")
+        # Landing page contributes nothing addressable (the module
+        # directive is filtered out).
+        self.assertEqual(payload["available"], [])
+        submodules = payload["submodules"]
+        self.assertIsInstance(submodules, list)
+        # Closest typo-match must come first.
+        self.assertEqual(submodules[0], "bpy.types.Scene")
+        # `Object` is missing both `S` and `n` -> filtered out.
+        self.assertNotIn("bpy.types.Object", submodules)
+        # Filter must never keep a sibling whose last component lacks
+        # any of the tail chars; assert the invariant directly.
+        tail_chars = set("Scne")
+        for entry in submodules:
+            last = entry.rsplit(".", 1)[-1]
+            self.assertTrue(
+                tail_chars.issubset(last),
+                "Filter kept {!r} missing chars {!r}".format(
+                    entry, tail_chars - set(last),
+                ),
+            )
+
+    def test_collects_literalinclude_examples(self) -> None:
+        """
+        ``bpy.app.handlers.rst`` pulls in three ``.. literalinclude::``
+        examples. The tool should surface each referenced file's content
+        in an ``examples`` list, deduplicated and with stable ordering.
+        """
+        payload = _call_server_tool(
+            "get_python_api_docs", {"identifier": "bpy.app.handlers"},
+        )
+        self.assertEqual(payload["kind"], "exact")
+        self.assertTrue(payload["found"])
+        examples = payload["examples"]
+        self.assertIsInstance(examples, list)
+        paths = [e["path"] for e in examples]
+        self.assertEqual(
+            paths,
+            [
+                "examples/bpy.app.handlers.0.py",
+                "examples/bpy.app.handlers.1.py",
+                "examples/bpy.app.handlers.2.py",
+            ],
+        )
+        for entry in examples:
+            self.assertIsInstance(entry["content"], str)
+            self.assertTrue(
+                entry["content"].strip(),
+                "Empty example content for {!r}".format(entry["path"]),
+            )
+            if entry["path"].endswith(".py"):
+                # `ast.parse` surfaces a clear SyntaxError on truncated
+                # or corrupted content.
+                ast.parse(entry["content"], filename=entry["path"])
+        # Each of these RST directives specifies `:lines: N-` to drop
+        # the leading module docstring. The first example's file has
+        # the docstring on lines 1-7 and `import bpy` on line 8, so
+        # the extracted content must start at `import bpy` (not the
+        # triple-quoted docstring) and must not contain the docstring
+        # title.
+        self.assertTrue(examples[0]["content"].startswith("import bpy"))
+        self.assertNotIn("Basic Handler Example", examples[0]["content"])
+
+    def test_examples_empty_when_no_literalincludes(self) -> None:
+        """
+        ``bpy.app.rst`` has no ``.. literalinclude::`` directives, so
+        the tool should return an empty ``examples`` list for shape
+        stability.
+        """
+        payload = _call_server_tool(
+            "get_python_api_docs", {"identifier": "bpy.app"},
+        )
+        self.assertEqual(payload["kind"], "exact")
+        self.assertEqual(payload["examples"], [])
 
 
 if __name__ == "__main__":

@@ -855,7 +855,7 @@ class TestChatClient(unittest.TestCase):
     # --------------
     # Use-case tests
     #
-    # One test per bullet point in ``use_cases.txt`` (Use Cases).
+    # One test per bullet point in `use_cases.txt` (Use Cases).
     # Each is gated on use_llm_check().
 
     @unittest.skipUnless(use_llm_check(), use_llm_text)
