@@ -31,7 +31,7 @@ def main() -> None:
         test_id = test.id()
         # `test.id()` returns e.g.
         # `tests.integration.test_blender_mcp_with_llm.TestChatClient.test_name`.
-        # Extract ``TestChatClient.test_name`` by taking the last two dot-separated parts.
+        # Extract `TestChatClient.test_name` by taking the last two dot-separated parts.
         class_name = test_id.rsplit(".", 2)[-2]
         method_name = test_id.rsplit(".", 1)[-1]
         print(class_name + "." + method_name)

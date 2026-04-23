@@ -97,8 +97,8 @@ def toolcode_wrap_with_calling_convention(
     call = "main({:s})".format(_PARAMS_PLACEHOLDER)
 
     if use_result:
-        # When main() returns a callable, store it as ``check_is_finished``
-        # for the addon's deferred response system (see ``deferred_tool.py``).
+        # When main() returns a callable, store it as `check_is_finished`
+        # for the addon's deferred response system (see `deferred_tool.py`).
         # When it returns a NamedTuple, convert to dict as usual.
         footer = (
             "\n_rv = {:s}\n"

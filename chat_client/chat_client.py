@@ -280,7 +280,7 @@ async def _run(
             messages: list[dict[str, Any]] = []
 
             # OpenAI uses a system message in the messages list;
-            # Claude uses a separate ``system`` parameter.
+            # Claude uses a separate `system` parameter.
             system_text = ""
             if instructions:
                 if provider == "openai":

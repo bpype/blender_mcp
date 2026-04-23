@@ -82,7 +82,7 @@ def main() -> int:
             shutil.copy2(src_file, dst_file)
             count += 1
 
-    # Copy examples from the sibling ``examples/`` directory.
+    # Copy examples from the sibling `examples/` directory.
     dst_examples_dir = os.path.join(dst_dir, "examples")
     for dirpath, _dirnames, filenames in os.walk(examples_dir):
         for filename in filenames:
