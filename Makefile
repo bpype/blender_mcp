@@ -95,7 +95,9 @@ else
 endif
 
 format:
-	autopep8 --in-place --recursive mcp/ addon/ _misc/ tests/ chat_client/
+	@for d in mcp addon _misc tests chat_client; do \
+		autopep8 --in-place --recursive $$d || exit 1; \
+	done
 
 check_license:
 	@$(PYTHON) _misc/check_license.py
