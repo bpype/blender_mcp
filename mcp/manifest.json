@@ -13,7 +13,7 @@
   "icon": "blender_icon.png",
   "server": {
     "type": "uv",
-    "entry_point": "mcp/blmcp/__init__.py",
+    "entry_point": "blmcp/__init__.py",
     "mcp_config": {
       "command": "uv",
       "args": [
