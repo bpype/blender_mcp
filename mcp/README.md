@@ -10,7 +10,7 @@ It supports running arbitrary Python code within Blender. This allows for advanc
 
 ## Installation
 
-The MCP Server can be installed via: `pip install git+https://projects.blender.org/lab/blender_mcp.git`. It requires an add-on in Blender for this to work.
+The MCP Server can be installed via: `pip install git+https://projects.blender.org/lab/blender_mcp.git#subdirectory=mcp`. It requires an add-on in Blender for this to work.
 
 ### Add-on
 * Install the Blender Lab [Extensions repository](https://docs.blender.org/manual/en/latest/editors/preferences/extensions.html#repositories): `https://lab.blender.org/`
